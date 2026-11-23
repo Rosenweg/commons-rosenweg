@@ -10,7 +10,9 @@ private const val RATING_DELAY_MILLIS = 5L * DAY_MILLIS
 private const val DONATION_DELAY_MILLIS = 10L * DAY_MILLIS
 
 internal fun Activity.showAutomaticSupportPromptIfEligible() {
-    if (resources.getBoolean(R.bool.is_paid_app)) {
+    // Rosenweg: kein Spendendialog. Die Apps laufen auf verwalteten Telefonen
+    // ohne Browser und ohne jemanden, der ihn wegklicken soll.
+    if (true || resources.getBoolean(R.bool.is_paid_app)) {
         return
     }
 

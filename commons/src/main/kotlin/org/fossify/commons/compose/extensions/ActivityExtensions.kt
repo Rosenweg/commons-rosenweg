@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.extensions
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
@@ -85,7 +87,7 @@ const val FAKE_VERSION_APP_LABEL =
 fun Context.fakeVersionCheck(
     showConfirmationDialog: () -> Unit
 ) {
-    if (!packageName.startsWith("org.fossify.", true)) {
+    if (!Rosenweg.istUnsereApp(packageName)) {
         if ((0..50).random() == 10 || baseConfig.appRunCount % 100 == 0) {
             showConfirmationDialog()
         }

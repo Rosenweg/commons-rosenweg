@@ -1,5 +1,7 @@
 package org.fossify.commons.extensions
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
@@ -595,7 +597,7 @@ fun Activity.openPathIntent(
             setDataAndType(newUri, mimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-            if (applicationId == "org.fossify.gallery" || applicationId == "org.fossify.gallery.debug") {
+            if (Rosenweg.istApp(applicationId, "gallery")) {
                 putExtra(IS_FROM_GALLERY, true)
             }
 
@@ -638,7 +640,8 @@ fun BaseSimpleActivity.launchCallIntent(recipient: String, handle: PhoneAccountH
             }
 
             if (isDefaultDialer()) {
-                val packageName = if (baseConfig.appId.contains(".debug", true)) "org.fossify.phone.debug" else "org.fossify.phone"
+                // Rosenweg: eigene Telefon-App (Kotlin-Paket bleibt org.fossify.phone).
+                val packageName = Rosenweg.paket("phone", baseConfig.appId.contains(".debug", true))
                 val className = "org.fossify.phone.activities.DialerActivity"
                 setClassName(packageName, className)
             }

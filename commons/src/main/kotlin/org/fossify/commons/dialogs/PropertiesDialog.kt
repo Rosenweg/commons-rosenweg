@@ -1,5 +1,7 @@
 package org.fossify.commons.dialogs
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.app.Activity
 import android.net.Uri
 import android.os.Environment
@@ -172,7 +174,7 @@ class PropertiesDialog : BasePropertiesDialog {
                 return
             }
 
-            if (mActivity.baseConfig.appId.removeSuffix(".debug") == "org.fossify.filemanager") {
+            if (Rosenweg.istApp(mActivity.baseConfig.appId, "filemanager")) {
                 calculateAndDisplayHash(
                     path = path,
                     labelRes = R.string.md5,

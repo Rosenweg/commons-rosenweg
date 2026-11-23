@@ -1,5 +1,7 @@
 package org.fossify.commons.activities
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.app.Application
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -87,7 +89,7 @@ class ManageBlockedNumbersActivity : BaseSimpleActivity() {
             val isBlockingUnknownNumbers by config.isBlockingUnknownNumbers.collectAsStateWithLifecycle(initialValue = config.blockUnknownNumbers)
             val showCheckmarksOnSwitches by config.showCheckmarksOnSwitchesFlow.collectAsStateWithLifecycle(initialValue = config.showCheckmarksOnSwitches)
             val isDialer = remember {
-                config.appId.startsWith("org.fossify.phone")
+                Rosenweg.istApp(config.appId, "phone")
             }
             val isDefaultDialer: Boolean = onEventValue {
                 context.isDefaultDialer()
@@ -223,7 +225,7 @@ class ManageBlockedNumbersActivity : BaseSimpleActivity() {
     }
 
     private fun maybeSetDefaultCallerIdApp() {
-        if (isQPlus() && baseConfig.appId.startsWith("org.fossify.phone")) {
+        if (isQPlus() && Rosenweg.istApp(baseConfig.appId, "phone")) {
             setDefaultCallerIdApp()
         }
     }
