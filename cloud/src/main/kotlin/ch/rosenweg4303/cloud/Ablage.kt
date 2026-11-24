@@ -25,6 +25,15 @@ object Ablage {
         null
     }
 
+    /** Neueste Datei der App in der Nextcloud (nach Aenderungszeit); null ohne Anmeldung/Netz/Dateien. */
+    fun neueste(ctx: Context, appOrdner: String): Eintrag? = dateien(ctx, appOrdner)?.maxByOrNull { it.geaendert }
+
+    /** Vorschaubild-Adresse und Kopfzeilen (z.B. fuer Glide mit LazyHeaders). */
+    fun vorschau(ctx: Context, e: Eintrag, px: Int = 256): Pair<String, Map<String, String>>? {
+        val dav = webDav(ctx) ?: return null
+        return dav.vorschauAdresse(e, px) to dav.abspielKopfzeilen()
+    }
+
     /** Adresse und Kopfzeilen zum Streamen einer Datei (MediaPlayer, ExoPlayer ...). */
     fun streamen(ctx: Context, pfad: String): Pair<Uri, Map<String, String>>? {
         val dav = webDav(ctx) ?: return null

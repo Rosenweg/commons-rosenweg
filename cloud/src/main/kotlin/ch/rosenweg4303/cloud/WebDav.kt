@@ -89,6 +89,10 @@ class WebDav(private val konto: Konto, private val appName: String) {
      */
     fun webAdresse(e: Eintrag): String = "${konto.server}/index.php/f/${e.fileId}" // oeffnet standardmaessig die Datei
 
+    /** Vorschaubild der Nextcloud (JPEG, hoechstens [px] gross). Kopfzeilen: [abspielKopfzeilen]. */
+    fun vorschauAdresse(e: Eintrag, px: Int = 256): String =
+        "${konto.server}/index.php/core/preview?fileId=${e.fileId}&x=$px&y=$px&a=1&mode=cover"
+
     /** Office-Datei direkt im Euro-Office-Editor der Nextcloud (eigener Tab, kein Umweg ueber die Dateiliste). */
     fun officeAdresse(e: Eintrag): String = "${konto.server}/index.php/apps/eurooffice/${e.fileId}"
 
