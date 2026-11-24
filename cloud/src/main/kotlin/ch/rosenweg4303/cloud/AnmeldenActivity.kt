@@ -29,6 +29,9 @@ class AnmeldenActivity : Activity() {
     private lateinit var knopf: Button
     private lateinit var nochmal: Button
     private var login: LoginFlow? = null
+    /** Anmeldung eben fertig geworden: beim Zurueckkommen kurz melden und schliessen. */
+    private var geradeAngemeldet = false
+    private var sichtbar = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +66,24 @@ class AnmeldenActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        sichtbar = true
+        if (geradeAngemeldet) {
+            fertig()
+            return
+        }
         anzeigen()
+    }
+
+    override fun onPause() {
+        sichtbar = false
+        super.onPause()
+    }
+
+    /** Zurueck in die App: Android 14 laesst uns nicht selbst aus dem Hintergrund nach vorne. */
+    private fun fertig() {
+        val konto = KontoSpeicher(this).laden()
+        if (konto != null) Toast.makeText(this, "Angemeldet als ${konto.benutzer}", Toast.LENGTH_SHORT).show()
+        finish()
     }
 
     override fun onDestroy() {
@@ -112,9 +132,14 @@ class AnmeldenActivity : Activity() {
                 Einstellungen.abgleichen(this) // persoenliche Einstellungen holen bzw. hochladen
                 runOnUiThread {
                     login = null
-                    // zurueck in die App holen, falls der Browser noch vorne ist
-                    startActivity(Intent(this, AnmeldenActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                    anzeigen()
+                    geradeAngemeldet = true
+                    if (sichtbar) {
+                        fertig()
+                    } else {
+                        // Versuch, die App nach vorne zu holen (ab Android 14 meist blockiert);
+                        // sonst schliesst onResume, sobald man zurueckkommt
+                        startActivity(Intent(this, AnmeldenActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
