@@ -17,7 +17,13 @@ const val ROSENWEG_NEXTCLOUD = "https://nextcloud.rosenweg4303.ch"
  * Zugang einer Person zur Nextcloud: App-Passwort aus dem Login-Flow, nie das
  * eigentliche Passwort (Anmeldung laeuft ueber Authentik im Browser).
  */
-data class Konto(val server: String, val benutzer: String, val appPasswort: String) {
+data class Konto(
+    val server: String,
+    val benutzer: String,
+    val appPasswort: String,
+    /** Zugang kommt von Rosenweg Gerät (geteiltes Telefon): gilt fuer alle Apps, Abmelden dort. */
+    val vomGeraet: Boolean = false,
+) {
     override fun toString() = "Konto($benutzer@$server)" // Passwort nie in Logs
 }
 
@@ -26,13 +32,32 @@ data class Konto(val server: String, val benutzer: String, val appPasswort: Stri
  * dem Android-Keystore verschluesselt (verlaesst das Geraet nicht, faellt beim
  * Loeschen der App-Daten weg — auf geteilten Telefonen also beim Abmelden).
  *
- * Spaeter: liefert Rosenweg Konto ein Konto (Signatur-geschuetzt), hat das
- * Vorrang; ohne Rosenweg Konto meldet sich jede App selbst an.
+ * Auf geteilten Telefonen liefert Rosenweg Gerät den Zugang der angemeldeten Person
+ * (App-Passwort von der Anlage, Signatur-geschuetzt) — das hat Vorrang. Ohne Rosenweg
+ * Gerät (privates Handy) meldet sich jede App selbst an.
  */
 class KontoSpeicher(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("rosenweg_cloud", Context.MODE_PRIVATE)
+    private val ctx = context.applicationContext
+    private val prefs = ctx.getSharedPreferences("rosenweg_cloud", Context.MODE_PRIVATE)
 
-    fun laden(): Konto? {
+    fun laden(): Konto? = vomGeraet() ?: eigenes()
+
+    /** Zugang der am geteilten Telefon angemeldeten Person (Rosenweg Gerät). */
+    private fun vomGeraet(): Konto? = try {
+        ctx.contentResolver.call(
+            android.net.Uri.parse("content://ch.rosenweg4303.telefon.anlage"), "nextcloud_konto", ctx.packageName, null
+        )?.let { b ->
+            val server = b.getString("server")?.trimEnd('/')
+            val benutzer = b.getString("benutzer")
+            val pw = b.getString("app_passwort")
+            if (server == ROSENWEG_NEXTCLOUD && !benutzer.isNullOrEmpty() && !pw.isNullOrEmpty())
+                Konto(server, benutzer, pw, vomGeraet = true) else null
+        }
+    } catch (e: Exception) {   // keine Geraete-App oder keine Berechtigung (privates Handy)
+        null
+    }
+
+    private fun eigenes(): Konto? {
         val server = prefs.getString(SERVER, null) ?: return null
         val benutzer = prefs.getString(BENUTZER, null) ?: return null
         val iv = prefs.getString(IV, null) ?: return null

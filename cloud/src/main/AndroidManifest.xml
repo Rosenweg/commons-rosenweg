@@ -5,6 +5,12 @@
     <!-- WorkManager wartet auf Netz -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Zugang der am geteilten Telefon angemeldeten Person von Rosenweg Gerät (nur Rosenweg-Signatur) -->
+    <uses-permission android:name="ch.rosenweg4303.permission.ANLAGE" />
+    <queries>
+        <provider android:authorities="ch.rosenweg4303.telefon.anlage" />
+    </queries>
+
     <application>
         <activity
             android:name="ch.rosenweg4303.cloud.AnmeldenActivity"

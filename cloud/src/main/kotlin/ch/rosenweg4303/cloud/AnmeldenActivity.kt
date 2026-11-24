@@ -97,6 +97,7 @@ class AnmeldenActivity : Activity() {
         val fehler = Hochladen.fehlgeschlagen(this)
         status.text = when {
             login != null -> "Warte auf die Anmeldung im Browser …"
+            konto?.vomGeraet == true -> "Angemeldet als ${konto.benutzer} (über Rosenweg Gerät)"
             konto != null -> "Angemeldet als ${konto.benutzer}"
             else -> "Nicht angemeldet"
         }
@@ -109,6 +110,7 @@ class AnmeldenActivity : Activity() {
         }
         nochmal.visibility = if (fehler > 0 && konto != null) Button.VISIBLE else Button.GONE
         knopf.isEnabled = login == null
+        knopf.visibility = if (konto?.vomGeraet == true) Button.GONE else Button.VISIBLE   // Abmelden: in Rosenweg Gerät
         if (konto == null) {
             knopf.text = "Anmelden"
             knopf.setOnClickListener { anmelden() }
