@@ -35,6 +35,9 @@ internal object Http {
 class NextcloudFehler(val code: Int, meldung: String) : IOException(meldung) {
     /** App-Passwort widerrufen oder Konto gesperrt -> neu anmelden. */
     val anmeldungNoetig get() = code == 401
+
+    /** Server voruebergehend ueberlastet — spaeter nochmal, nichts kaputt. */
+    val voruebergehend get() = code in 502..504
 }
 
 /** Ein Eintrag in einem Nextcloud-Ordner. [pfad] relativ zur Wurzel der Person, ohne fuehrenden "/". */
@@ -67,8 +70,18 @@ class WebDav(private val konto: Konto, private val appName: String) {
     private fun anfrage(pfad: String) = Request.Builder().url(url(pfad))
         .header("Authorization", auth).header("User-Agent", appName)
 
-    private fun ausfuehren(r: Request): Response {
-        val a = Http.client.newCall(r).execute()
+    /**
+     * [wiederholen] nur fuer Anfragen ohne Nebenwirkung (PROPFIND, GET): Bei
+     * Ueberlastung (502/503/504, z.B. waehrend der naechtlichen Sicherung)
+     * einmal nach 3 s erneut versuchen.
+     */
+    private fun ausfuehren(r: Request, wiederholen: Boolean = false): Response {
+        var a = Http.client.newCall(r).execute()
+        if (wiederholen && a.code in UEBERLASTET) {
+            a.close()
+            Thread.sleep(3000)
+            a = Http.client.newCall(r).execute()
+        }
         if (!a.isSuccessful) {
             a.close()
             throw NextcloudFehler(a.code, when (a.code) {
@@ -78,6 +91,8 @@ class WebDav(private val konto: Konto, private val appName: String) {
                 405, 409 -> "Gibt es schon oder Ordner fehlt"
                 412 -> "Gibt es schon"
                 507 -> "Speicher voll"
+                in UEBERLASTET -> "gerade überlastet, bitte gleich nochmal versuchen"
+                in 500..599 -> "Serverfehler ${a.code}"
                 else -> "Fehler ${a.code}"
             })
         }
@@ -87,7 +102,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
     fun liste(pfad: String): List<Eintrag> {
         val r = anfrage(pfad).header("Depth", "1")
             .method("PROPFIND", PROPFIND.toRequestBody("application/xml; charset=utf-8".toMediaTypeOrNull())).build()
-        ausfuehren(r).use { a ->
+        ausfuehren(r, wiederholen = true).use { a ->
             val alle = parse(a.body!!.byteStream())
             val selbst = pfad.trim('/')
             return alle.filter { it.pfad != selbst }
@@ -99,7 +114,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
         val r = anfrage(pfad).header("Depth", "0")
             .method("PROPFIND", PROPFIND.toRequestBody("application/xml; charset=utf-8".toMediaTypeOrNull())).build()
         return try {
-            ausfuehren(r).use { parse(it.body!!.byteStream()).firstOrNull() }
+            ausfuehren(r, wiederholen = true).use { parse(it.body!!.byteStream()).firstOrNull() }
         } catch (e: NextcloudFehler) {
             if (e.code == 404) null else throw e
         }
@@ -107,7 +122,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
 
     /** Laedt nach [ziel]; erst nach vollstaendigem Empfang wird umbenannt. */
     fun herunterladen(pfad: String, ziel: File, fortschritt: ((Long, Long) -> Unit)? = null) {
-        ausfuehren(anfrage(pfad).get().build()).use { a ->
+        ausfuehren(anfrage(pfad).get().build(), wiederholen = true).use { a ->
             val gesamt = a.body!!.contentLength()
             val tmp = File(ziel.parentFile, ".${ziel.name}.teil")
             ziel.parentFile?.mkdirs()
@@ -234,6 +249,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
     }
 
     private companion object {
+        val UEBERLASTET = setOf(502, 503, 504)
         const val PROPFIND = """<?xml version="1.0" encoding="UTF-8"?>
 <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">
   <d:prop>
