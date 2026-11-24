@@ -3,7 +3,7 @@
   "component": {
     "group": "ch.rosenweg4303",
     "module": "cloud",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -40,13 +40,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.3.0.aar",
-          "url": "cloud-0.3.0.aar",
-          "size": 56683,
-          "sha512": "580bf32d46e38ebe1018337c9850b02e9c7c7679dcbb9681b44043ec4605979bbef76aa796fe186aa50e9238575ea4cd724393adf65784e20b3fbab153e0f6e0",
-          "sha256": "23819a733ac13ef802f00b9068022514023dfae83cb0456b9de8c05613e88fc1",
-          "sha1": "6f2551520b536131a5c7572e566694f2996c457d",
-          "md5": "97ea651715264d328ac116747f04f986"
+          "name": "cloud-0.4.0.aar",
+          "url": "cloud-0.4.0.aar",
+          "size": 65289,
+          "sha512": "ba02d2cc8b52611f141f8391c996c277d392682bb23bc3e285333cd43a02c92c3d38aa24a70256ecec492dfa73bfd7b50c797b4e8638ff00994adb384fc85d6a",
+          "sha256": "ff6bf0ca4a01adf87586c470df8586acd18abc784c05898caf07d831008b1171",
+          "sha1": "0df0fec8871fa0ae7bbeeaa4eaa733055e36ec46",
+          "md5": "88dea65c1707cda8dbe1fde2b55f1d36"
         }
       ]
     },
@@ -83,13 +83,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.3.0.aar",
-          "url": "cloud-0.3.0.aar",
-          "size": 56683,
-          "sha512": "580bf32d46e38ebe1018337c9850b02e9c7c7679dcbb9681b44043ec4605979bbef76aa796fe186aa50e9238575ea4cd724393adf65784e20b3fbab153e0f6e0",
-          "sha256": "23819a733ac13ef802f00b9068022514023dfae83cb0456b9de8c05613e88fc1",
-          "sha1": "6f2551520b536131a5c7572e566694f2996c457d",
-          "md5": "97ea651715264d328ac116747f04f986"
+          "name": "cloud-0.4.0.aar",
+          "url": "cloud-0.4.0.aar",
+          "size": 65289,
+          "sha512": "ba02d2cc8b52611f141f8391c996c277d392682bb23bc3e285333cd43a02c92c3d38aa24a70256ecec492dfa73bfd7b50c797b4e8638ff00994adb384fc85d6a",
+          "sha256": "ff6bf0ca4a01adf87586c470df8586acd18abc784c05898caf07d831008b1171",
+          "sha1": "0df0fec8871fa0ae7bbeeaa4eaa733055e36ec46",
+          "md5": "88dea65c1707cda8dbe1fde2b55f1d36"
         }
       ]
     }

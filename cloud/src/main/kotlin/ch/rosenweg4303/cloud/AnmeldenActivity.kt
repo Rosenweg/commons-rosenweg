@@ -109,6 +109,7 @@ class AnmeldenActivity : Activity() {
                 val konto = flow.warten()
                 KontoSpeicher(this).speichern(konto)
                 Hochladen.anstossen(this)
+                Einstellungen.abgleichen(this) // persoenliche Einstellungen holen bzw. hochladen
                 runOnUiThread {
                     login = null
                     // zurueck in die App holen, falls der Browser noch vorne ist
