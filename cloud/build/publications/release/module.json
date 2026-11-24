@@ -3,7 +3,7 @@
   "component": {
     "group": "ch.rosenweg4303",
     "module": "cloud",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -40,13 +40,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.1.3.aar",
-          "url": "cloud-0.1.3.aar",
-          "size": 31003,
-          "sha512": "db6420a8fc865d80b50a26139c539f335bff0e1d2cfef64e0cd7d1b9f7f29eb3a6d7e7e2c8dca21b6b12b7154f4132ece0dfc16cde7af5a479d0fb6e1b4bbf38",
-          "sha256": "faccc2afe87f08e8267636ba92972c14a8a861e9f5a79af5edc803ddf822cce5",
-          "sha1": "08f730b303a30715a2244ee3c6692af9d2d4dbed",
-          "md5": "194544e5026ff307c954454f85bf1226"
+          "name": "cloud-0.2.0.aar",
+          "url": "cloud-0.2.0.aar",
+          "size": 48673,
+          "sha512": "4e525b10cb35874de3d032c41a360d87d27155394a9b0203f6960d61a7496cf4f47555fec1aa33872316cca23c2eb83bd52135a1c7e59704ebcf45a8b0e2b326",
+          "sha256": "0a6d48052d5851a996a58b364536c590bda72e7430dbec5fb8d3d617c1fd0465",
+          "sha1": "c30dc3804b71afbf010f9b891c11cce9aa1198bc",
+          "md5": "03af41894a8c0acf7e8db3a2b3f6b25d"
         }
       ]
     },
@@ -59,6 +59,13 @@
         "org.gradle.usage": "java-runtime"
       },
       "dependencies": [
+        {
+          "group": "androidx.work",
+          "module": "work-runtime-ktx",
+          "version": {
+            "requires": "2.12.0"
+          }
+        },
         {
           "group": "com.squareup.okhttp3",
           "module": "okhttp",
@@ -76,13 +83,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.1.3.aar",
-          "url": "cloud-0.1.3.aar",
-          "size": 31003,
-          "sha512": "db6420a8fc865d80b50a26139c539f335bff0e1d2cfef64e0cd7d1b9f7f29eb3a6d7e7e2c8dca21b6b12b7154f4132ece0dfc16cde7af5a479d0fb6e1b4bbf38",
-          "sha256": "faccc2afe87f08e8267636ba92972c14a8a861e9f5a79af5edc803ddf822cce5",
-          "sha1": "08f730b303a30715a2244ee3c6692af9d2d4dbed",
-          "md5": "194544e5026ff307c954454f85bf1226"
+          "name": "cloud-0.2.0.aar",
+          "url": "cloud-0.2.0.aar",
+          "size": 48673,
+          "sha512": "4e525b10cb35874de3d032c41a360d87d27155394a9b0203f6960d61a7496cf4f47555fec1aa33872316cca23c2eb83bd52135a1c7e59704ebcf45a8b0e2b326",
+          "sha256": "0a6d48052d5851a996a58b364536c590bda72e7430dbec5fb8d3d617c1fd0465",
+          "sha1": "c30dc3804b71afbf010f9b891c11cce9aa1198bc",
+          "md5": "03af41894a8c0acf7e8db3a2b3f6b25d"
         }
       ]
     }

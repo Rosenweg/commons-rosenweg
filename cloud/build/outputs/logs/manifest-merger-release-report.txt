@@ -1,7 +1,7 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-5:12
-INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-5:12
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-16:12
+INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-16:12
 	package
 		INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml
 	xmlns:android
@@ -10,6 +10,24 @@ uses-permission#android.permission.INTERNET
 ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:4:5-67
 	android:name
 		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:4:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:6:5-79
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:6:22-76
+application
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:8:5-15:19
+activity#ch.rosenweg4303.cloud.AnmeldenActivity
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:9:9-14:75
+	android:label
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:12:13-47
+	android:launchMode
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:13:13-43
+	android:exported
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:11:13-37
+	android:theme
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:14:13-72
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:10:13-66
 uses-sdk
 INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml

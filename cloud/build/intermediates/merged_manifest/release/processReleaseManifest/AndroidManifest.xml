@@ -5,5 +5,16 @@
     <uses-sdk android:minSdkVersion="26" />
     <!-- Nur Apps mit diesem Modul duerfen ins Netz: zur Nextcloud der Person. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- WorkManager wartet auf Netz -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <activity
+            android:name="ch.rosenweg4303.cloud.AnmeldenActivity"
+            android:exported="false"
+            android:label="Rosenweg-Nextcloud"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.DeviceDefault.DayNight" />
+    </application>
 
 </manifest>

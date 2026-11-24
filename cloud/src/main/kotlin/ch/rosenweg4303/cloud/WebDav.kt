@@ -168,6 +168,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
      * Laedt hoch. Gilt erst als erledigt, wenn die Nextcloud 201/204 meldet —
      * erst danach duerfen Apps die lokale Kopie loeschen (Grundregel).
      *
+     * [nurNeu]: nur anlegen, nie ueberschreiben (412, wenn es den Namen schon gibt).
      * [wennEtag]: nur ueberschreiben, wenn die Datei auf dem Server noch diese
      * Fassung hat, sonst [NextcloudFehler] 412 (jemand anderes war schneller).
      *
@@ -175,7 +176,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
      */
     fun hochladen(
         pfad: String, quelle: () -> InputStream, laenge: Long, mime: String?,
-        geaendertMs: Long? = null, wennEtag: String? = null,
+        geaendertMs: Long? = null, wennEtag: String? = null, nurNeu: Boolean = false,
     ): String? {
         val body = object : RequestBody() {
             override fun contentType() = (mime ?: "application/octet-stream").toMediaTypeOrNull()
@@ -187,6 +188,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
         val b = anfrage(pfad).put(body)
         geaendertMs?.let { b.header("X-OC-Mtime", (it / 1000).toString()) }
         wennEtag?.let { b.header("If-Match", "\"$it\"") }
+        if (nurNeu) b.header("If-None-Match", "*") // gibt es die Datei schon -> 412, nichts ueberschreiben
         ausfuehren(b.build()).use { a ->
             return (a.header("OC-ETag") ?: a.header("ETag"))?.trim('"')
         }
