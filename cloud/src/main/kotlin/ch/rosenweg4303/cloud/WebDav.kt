@@ -30,6 +30,17 @@ internal object Http {
             .followRedirects(false) // Zugangsdaten nie an eine Umleitung weitergeben
             .build()
     }
+
+    /**
+     * HTTP-Kopfzeilen duerfen nur ASCII enthalten (OkHttp wirft sonst):
+     * "Diktiergerät (Android)" -> "Diktiergeraet (Android)".
+     */
+    fun ascii(text: String): String {
+        val ersetzt = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
+            .replace("Ä", "Ae").replace("Ö", "Oe").replace("Ü", "Ue").replace("ß", "ss")
+        val ohneAkzent = java.text.Normalizer.normalize(ersetzt, java.text.Normalizer.Form.NFD)
+        return ohneAkzent.filter { it in ' '..'~' }.ifBlank { "Rosenweg (Android)" }
+    }
 }
 
 class NextcloudFehler(val code: Int, meldung: String) : IOException(meldung) {
@@ -70,6 +81,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
     private val basis: HttpUrl = "${konto.server}/remote.php/dav/files/".toHttpUrl()
         .newBuilder().addPathSegment(konto.benutzer).build()
     private val auth = Credentials.basic(konto.benutzer, konto.appPasswort)
+    private val ua = Http.ascii(appName)
 
     /**
      * Adresse, unter der die Nextcloud-Weboberflaeche die Datei direkt oeffnet
@@ -87,7 +99,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
     }
 
     private fun anfrage(pfad: String) = Request.Builder().url(url(pfad))
-        .header("Authorization", auth).header("User-Agent", appName)
+        .header("Authorization", auth).header("User-Agent", ua)
 
     /**
      * [wiederholen] nur fuer Anfragen ohne Nebenwirkung (PROPFIND, GET): Bei
@@ -226,7 +238,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
             Http.client.newCall(
                 Request.Builder().url("${konto.server}/ocs/v2.php/core/apppassword")
                     .header("Authorization", auth).header("OCS-APIRequest", "true")
-                    .header("User-Agent", appName).delete().build()
+                    .header("User-Agent", ua).delete().build()
             ).execute().close()
         } catch (e: IOException) {
         }

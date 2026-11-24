@@ -19,13 +19,14 @@ class LoginFlow(private val appName: String, private val server: String = ROSENW
         private set
     private lateinit var token: String
     private lateinit var endpunkt: String
+    private val ua = Http.ascii(appName)
 
     @Volatile
     var abgebrochen = false
 
     fun starten() {
         val r = Request.Builder().url("$server/index.php/login/v2").post(FormBody.Builder().build())
-            .header("User-Agent", appName).build()
+            .header("User-Agent", ua).build()
         Http.client.newCall(r).execute().use { a ->
             if (!a.isSuccessful) throw NextcloudFehler(a.code, "Anmeldung nicht moeglich")
             val j = JSONObject(a.body!!.string())
@@ -45,7 +46,7 @@ class LoginFlow(private val appName: String, private val server: String = ROSENW
         val ende = System.currentTimeMillis() + maxMinuten * 60_000L
         while (!abgebrochen && System.currentTimeMillis() < ende) {
             val r = Request.Builder().url(endpunkt).post(FormBody.Builder().add("token", token).build())
-                .header("User-Agent", appName).build()
+                .header("User-Agent", ua).build()
             try {
                 Http.client.newCall(r).execute().use { a ->
                     if (a.code == 200) {
