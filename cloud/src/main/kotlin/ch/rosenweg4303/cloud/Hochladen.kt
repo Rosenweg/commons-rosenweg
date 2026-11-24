@@ -48,12 +48,13 @@ object Hochladen {
         return "$PERSOENLICH/$appOrdner/$monat/$name"
     }
 
-    fun einreihen(ctx: Context, datei: File, ziel: String, lokalLoeschen: Boolean, mime: String? = null) =
-        auftrag(ctx, "datei", datei.absolutePath, ziel, lokalLoeschen, mime)
+    /** [ueberschreiben]: gleiche Datei erneut speichern (z.B. Zeichnung), statt "(1)" anzuhaengen. */
+    fun einreihen(ctx: Context, datei: File, ziel: String, lokalLoeschen: Boolean, mime: String? = null, ueberschreiben: Boolean = false) =
+        auftrag(ctx, "datei", datei.absolutePath, ziel, lokalLoeschen, mime, ueberschreiben)
 
     /** Fuer Dateien, die die App selbst im MediaStore angelegt hat. */
-    fun einreihen(ctx: Context, uri: Uri, ziel: String, lokalLoeschen: Boolean, mime: String? = null) =
-        auftrag(ctx, "uri", uri.toString(), ziel, lokalLoeschen, mime)
+    fun einreihen(ctx: Context, uri: Uri, ziel: String, lokalLoeschen: Boolean, mime: String? = null, ueberschreiben: Boolean = false) =
+        auftrag(ctx, "uri", uri.toString(), ziel, lokalLoeschen, mime, ueberschreiben)
 
     /** Noch nicht hochgeladen (ohne die mit dauerhaftem Fehler). */
     fun ausstehend(ctx: Context) = auftraege(ctx).count { it.second.getProperty("fehler") == null }
@@ -83,7 +84,7 @@ object Hochladen {
             .enqueueUniqueWork(ARBEIT, ExistingWorkPolicy.APPEND_OR_REPLACE, arbeit)
     }
 
-    private fun auftrag(ctx: Context, art: String, quelle: String, ziel: String, loeschen: Boolean, mime: String?) {
+    private fun auftrag(ctx: Context, art: String, quelle: String, ziel: String, loeschen: Boolean, mime: String?, ueberschreiben: Boolean) {
         require(ziel.split('/').none { it.isEmpty() || it == "." || it == ".." }) { "Ungueltiges Ziel: $ziel" }
         val dir = File(ctx.filesDir, ORDNER).apply { mkdirs() }
         val p = Properties()
@@ -91,6 +92,7 @@ object Hochladen {
         p["quelle"] = quelle
         p["ziel"] = ziel
         p["loeschen"] = loeschen.toString()
+        p["ueberschreiben"] = ueberschreiben.toString()
         mime?.let { p["mime"] = it }
         speichern(File(dir, "${System.currentTimeMillis()}-${UUID.randomUUID()}.properties"), p)
         anstossen(ctx)
@@ -158,7 +160,9 @@ object Hochladen {
         val basis = name.substringBeforeLast('.', name)
         val endung = if (name.contains('.')) "." + name.substringAfterLast('.') else ""
         var versuch = 0
-        while (true) {
+        if (p.getProperty("ueberschreiben") == "true") {
+            dav.hochladen(ziel, oeffnen, laenge, mime, geaendert)
+        } else while (true) {
             val kandidat = if (versuch == 0) ziel else "$ordner/$basis ($versuch)$endung".trimStart('/')
             try {
                 dav.hochladen(kandidat, oeffnen, laenge, mime, geaendert, nurNeu = true)

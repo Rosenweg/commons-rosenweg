@@ -44,7 +44,7 @@ object Ablage {
     fun lokaleKopie(ctx: Context, pfad: String): File {
         val dav = webDav(ctx) ?: throw NextcloudFehler(401, "Nicht angemeldet")
         val ziel = File(File(ctx.cacheDir, "rosenweg-ablage"), pfad.substringAfterLast('/'))
-        if (!ziel.exists()) dav.herunterladen(pfad, ziel)
+        dav.herunterladen(pfad, ziel) // immer frisch: die Datei kann inzwischen geaendert sein
         return ziel
     }
 }
