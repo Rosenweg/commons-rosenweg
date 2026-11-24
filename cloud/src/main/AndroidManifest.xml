@@ -12,6 +12,12 @@
     </queries>
 
     <application>
+        <!-- Rosenweg Geraet fragt vor dem Abmelden, ob noch etwas hochzuladen ist -->
+        <provider
+            android:name="ch.rosenweg4303.cloud.HochladenStatus"
+            android:authorities="${applicationId}.rosenweg.hochladen"
+            android:exported="true"
+            android:permission="ch.rosenweg4303.permission.ANLAGE" />
         <activity
             android:name="ch.rosenweg4303.cloud.AnmeldenActivity"
             android:exported="false"
