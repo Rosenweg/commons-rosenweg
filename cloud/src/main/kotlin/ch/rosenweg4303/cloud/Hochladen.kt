@@ -2,6 +2,7 @@ package ch.rosenweg4303.cloud
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.provider.DocumentsContract
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -38,6 +39,8 @@ object Hochladen {
 
     private const val ORDNER = "rosenweg-hochladen"
     private const val ARBEIT = "rosenweg-hochladen"
+    private const val TAG = "RosenwegHochladen"
+    private const val MAX_VERSUCHE = 5
 
     /** Standardziel: Persönlich/<app>/<yyyy-MM>/<name>. */
     fun ziel(appOrdner: String, name: String, zeitMs: Long = System.currentTimeMillis()): String {
@@ -55,6 +58,11 @@ object Hochladen {
     /** Noch nicht hochgeladen (ohne die mit dauerhaftem Fehler). */
     fun ausstehend(ctx: Context) = auftraege(ctx).count { it.second.getProperty("fehler") == null }
 
+    /** Fehlertexte der fehlgeschlagenen Auftraege, z.B. "Diktiergerät/…/x.m4a: 403 Keine Berechtigung". */
+    fun fehlerTexte(ctx: Context): List<String> = auftraege(ctx).mapNotNull { (_, p) ->
+        p.getProperty("fehler")?.let { "${p.getProperty("ziel").removePrefix("$PERSOENLICH/")}: $it" }
+    }
+
     /** Mit dauerhaftem Fehler (z.B. Speicher voll) — Datei bleibt lokal. */
     fun fehlgeschlagen(ctx: Context) = auftraege(ctx).count { it.second.getProperty("fehler") != null }
 
@@ -63,6 +71,7 @@ object Hochladen {
         if (fehlerNochmal) {
             auftraege(ctx).filter { it.second.getProperty("fehler") != null }.forEach { (f, p) ->
                 p.remove("fehler")
+                p.remove("versuche")
                 speichern(f, p)
             }
         }
@@ -100,12 +109,22 @@ object Hochladen {
                     e.anmeldungNoetig -> return true // App-Passwort weg: nach neuer Anmeldung weiter
                     e.voruebergehend || e.code == 0 -> return false
                     else -> {
-                        // 403/404/409/507 ...: nicht endlos versuchen, Datei bleibt lokal
-                        p["fehler"] = "${e.code} ${e.message}"
-                        speichern(f, p)
+                        // 403 (keine Rechte) und 507 (Speicher voll) sofort aufgeben, alles andere
+                        // bis zu MAX_VERSUCHE Mal mit Pause. Die Datei bleibt immer lokal.
+                        Log.w(TAG, "Hochladen ${p.getProperty("ziel")}: ${e.code} ${e.message}")
+                        val versuche = (p.getProperty("versuche")?.toIntOrNull() ?: 0) + 1
+                        p["versuche"] = versuche.toString()
+                        if (e.code == 403 || e.code == 507 || versuche >= MAX_VERSUCHE) {
+                            p["fehler"] = "${e.code} ${e.message}"
+                            speichern(f, p)
+                        } else {
+                            speichern(f, p)
+                            return false
+                        }
                     }
                 }
             } catch (e: IOException) {
+                Log.w(TAG, "Hochladen ${p.getProperty("ziel")}: $e")
                 return false
             }
         }

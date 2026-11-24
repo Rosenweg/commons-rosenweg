@@ -82,7 +82,10 @@ class AnmeldenActivity : Activity() {
         }
         warteschlange.text = buildString {
             append(if (offen == 0) "Alles hochgeladen." else "$offen Datei(en) warten auf das Hochladen.")
-            if (fehler > 0) append("\n$fehler Datei(en) konnten nicht hochgeladen werden (bleiben auf dem Telefon).")
+            if (fehler > 0) {
+                append("\n$fehler Datei(en) konnten nicht hochgeladen werden (bleiben auf dem Telefon):")
+                Hochladen.fehlerTexte(this@AnmeldenActivity).take(5).forEach { append("\n• $it") }
+            }
         }
         nochmal.visibility = if (fehler > 0 && konto != null) Button.VISIBLE else Button.GONE
         knopf.isEnabled = login == null

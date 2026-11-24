@@ -141,6 +141,29 @@ class WebDav(private val konto: Konto, private val appName: String) {
         }
     }
 
+    /**
+     * Alle Dateien unter [ordner], auch in Unterordnern (bis [tiefe] Ebenen).
+     * Nextcloud erlaubt kein "Depth: infinity", deshalb Ordner fuer Ordner.
+     * Gibt es den Ordner nicht, ist die Liste leer.
+     */
+    fun alleDateien(ordner: String, tiefe: Int = 3): List<Eintrag> {
+        val inhalt = try {
+            liste(ordner)
+        } catch (e: NextcloudFehler) {
+            if (e.code == 404) return emptyList() else throw e
+        }
+        return inhalt.flatMap { e ->
+            when {
+                !e.istOrdner -> listOf(e)
+                tiefe > 0 && !e.name.startsWith(".") -> alleDateien(e.pfad, tiefe - 1)
+                else -> emptyList()
+            }
+        }
+    }
+
+    /** Kopfzeilen, um eine Datei direkt zu streamen (z.B. MediaPlayer.setDataSource(ctx, uri, kopfzeilen)). */
+    fun abspielKopfzeilen(): Map<String, String> = mapOf("Authorization" to auth, "User-Agent" to ua)
+
     fun eigenschaften(pfad: String): Eintrag? {
         val r = anfrage(pfad).header("Depth", "0")
             .method("PROPFIND", PROPFIND.toRequestBody("application/xml; charset=utf-8".toMediaTypeOrNull())).build()
