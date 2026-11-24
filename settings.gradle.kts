@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Fossify-Commons"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-include(":commons", ":samples")
+include(":commons", ":samples", ":cloud")

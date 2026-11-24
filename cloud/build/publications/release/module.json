@@ -1,0 +1,90 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "ch.rosenweg4303",
+    "module": "cloud",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.7.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "4.12.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "cloud-0.1.0.aar",
+          "url": "cloud-0.1.0.aar",
+          "size": 28854,
+          "sha512": "d505bc3e30a90c8fefe9809122a11e4597d5174c283686ac43297a47aa74926f70b3b1e3fa221be8a159a4a2c9ec176065a16a68acbf8482cc3bd73eb10161f0",
+          "sha256": "f009b390e6542fc496a58ac39e75776e49e2ab6dc19bcca14040f6cd13ee22d8",
+          "sha1": "c4a54d438110b4d28c37f28fa2df96a0214ec0e8",
+          "md5": "51773cfc54f505f64ccdf521ca615f14"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "4.12.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "cloud-0.1.0.aar",
+          "url": "cloud-0.1.0.aar",
+          "size": 28854,
+          "sha512": "d505bc3e30a90c8fefe9809122a11e4597d5174c283686ac43297a47aa74926f70b3b1e3fa221be8a159a4a2c9ec176065a16a68acbf8482cc3bd73eb10161f0",
+          "sha256": "f009b390e6542fc496a58ac39e75776e49e2ab6dc19bcca14040f6cd13ee22d8",
+          "sha1": "c4a54d438110b4d28c37f28fa2df96a0214ec0e8",
+          "md5": "51773cfc54f505f64ccdf521ca615f14"
+        }
+      ]
+    }
+  ]
+}
