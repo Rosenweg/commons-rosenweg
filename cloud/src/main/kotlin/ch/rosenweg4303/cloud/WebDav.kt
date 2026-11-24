@@ -49,7 +49,15 @@ data class Eintrag(
     val geaendert: Long,
     val mime: String,
     val etag: String,
-)
+    /** oc:permissions der Nextcloud, z.B. "RGDNVW"; leer = unbekannt (dann alles erlaubt). */
+    val rechte: String = "",
+) {
+    private fun hat(z: Char) = rechte.isEmpty() || z in rechte
+    val darfSchreiben get() = hat('W')
+    val darfAnlegen get() = rechte.isEmpty() || 'C' in rechte || 'K' in rechte
+    val darfLoeschen get() = hat('D')
+    val darfUmbenennen get() = hat('N') && hat('V')
+}
 
 /**
  * WebDAV auf die Dateien einer Person. Alle Aufrufe blockieren — im
@@ -148,8 +156,16 @@ class WebDav(private val konto: Konto, private val appName: String) {
     /**
      * Laedt hoch. Gilt erst als erledigt, wenn die Nextcloud 201/204 meldet —
      * erst danach duerfen Apps die lokale Kopie loeschen (Grundregel).
+     *
+     * [wennEtag]: nur ueberschreiben, wenn die Datei auf dem Server noch diese
+     * Fassung hat, sonst [NextcloudFehler] 412 (jemand anderes war schneller).
+     *
+     * @return ETag der neuen Fassung, falls die Nextcloud ihn mitschickt
      */
-    fun hochladen(pfad: String, quelle: () -> InputStream, laenge: Long, mime: String?, geaendertMs: Long? = null) {
+    fun hochladen(
+        pfad: String, quelle: () -> InputStream, laenge: Long, mime: String?,
+        geaendertMs: Long? = null, wennEtag: String? = null,
+    ): String? {
         val body = object : RequestBody() {
             override fun contentType() = (mime ?: "application/octet-stream").toMediaTypeOrNull()
             override fun contentLength() = laenge
@@ -159,7 +175,10 @@ class WebDav(private val konto: Konto, private val appName: String) {
         }
         val b = anfrage(pfad).put(body)
         geaendertMs?.let { b.header("X-OC-Mtime", (it / 1000).toString()) }
-        ausfuehren(b.build()).close()
+        wennEtag?.let { b.header("If-Match", "\"$it\"") }
+        ausfuehren(b.build()).use { a ->
+            return (a.header("OC-ETag") ?: a.header("ETag"))?.trim('"')
+        }
     }
 
     fun ordnerAnlegen(pfad: String) {
@@ -206,14 +225,14 @@ class WebDav(private val konto: Konto, private val appName: String) {
         p.setInput(ein, "UTF-8")
         val praefix = basis.encodedPath.trimEnd('/') + "/"
         val liste = ArrayList<Eintrag>()
-        var href = ""; var ordner = false; var groesse = 0L; var geaendert = 0L; var mime = ""; var etag = ""
+        var href = ""; var ordner = false; var groesse = 0L; var geaendert = 0L; var mime = ""; var etag = ""; var rechte = ""
         var text = StringBuilder()
         while (p.next() != XmlPullParser.END_DOCUMENT) {
             when (p.eventType) {
                 XmlPullParser.START_TAG -> {
                     text = StringBuilder()
                     if (p.name == "response") {
-                        href = ""; ordner = false; groesse = 0L; geaendert = 0L; mime = ""; etag = ""
+                        href = ""; ordner = false; groesse = 0L; geaendert = 0L; mime = ""; etag = ""; rechte = ""
                     }
                     if (p.name == "collection") ordner = true
                 }
@@ -227,12 +246,13 @@ class WebDav(private val konto: Konto, private val appName: String) {
                         "getlastmodified" -> geaendert = datum(t)
                         "getcontenttype" -> mime = t
                         "getetag" -> etag = t.trim('"')
+                        "permissions" -> rechte = t
                         "response" -> {
                             val roh = if (href.startsWith(praefix)) href.substring(praefix.length) else href
                             val rel = roh.split('/').filter { it.isNotEmpty() }
                                 .joinToString("/") { URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }
                             liste.add(Eintrag(rel.substringAfterLast('/'), rel, ordner, groesse, geaendert,
-                                if (ordner) "inode/directory" else mime.ifEmpty { "application/octet-stream" }, etag))
+                                if (ordner) "inode/directory" else mime.ifEmpty { "application/octet-stream" }, etag, rechte))
                         }
                     }
                     text = StringBuilder()
@@ -253,7 +273,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
         const val PROPFIND = """<?xml version="1.0" encoding="UTF-8"?>
 <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">
   <d:prop>
-    <d:getlastmodified/><d:getcontentlength/><d:getcontenttype/><d:resourcetype/><d:getetag/><oc:size/>
+    <d:getlastmodified/><d:getcontentlength/><d:getcontenttype/><d:resourcetype/><d:getetag/><oc:size/><oc:permissions/>
   </d:prop>
 </d:propfind>"""
     }
