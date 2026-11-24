@@ -51,6 +51,8 @@ data class Eintrag(
     val etag: String,
     /** oc:permissions der Nextcloud, z.B. "RGDNVW"; leer = unbekannt (dann alles erlaubt). */
     val rechte: String = "",
+    /** oc:fileid — fuer Adressen in die Nextcloud-Weboberflaeche (z.B. Euro-Office). 0 = unbekannt. */
+    val fileId: Long = 0,
 ) {
     private fun hat(z: Char) = rechte.isEmpty() || z in rechte
     val darfSchreiben get() = hat('W')
@@ -68,6 +70,15 @@ class WebDav(private val konto: Konto, private val appName: String) {
     private val basis: HttpUrl = "${konto.server}/remote.php/dav/files/".toHttpUrl()
         .newBuilder().addPathSegment(konto.benutzer).build()
     private val auth = Credentials.basic(konto.benutzer, konto.appPasswort)
+
+    /**
+     * Adresse, unter der die Nextcloud-Weboberflaeche die Datei direkt oeffnet
+     * (Office-Dateien im Euro-Office-Editor). Anmeldung im Browser ueber Authentik.
+     */
+    fun webAdresse(e: Eintrag): String = "${konto.server}/index.php/f/${e.fileId}" // oeffnet standardmaessig die Datei
+
+    /** Office-Datei direkt im Euro-Office-Editor der Nextcloud (eigener Tab, kein Umweg ueber die Dateiliste). */
+    fun officeAdresse(e: Eintrag): String = "${konto.server}/index.php/apps/eurooffice/${e.fileId}"
 
     fun url(pfad: String): HttpUrl {
         val b = basis.newBuilder()
@@ -225,14 +236,14 @@ class WebDav(private val konto: Konto, private val appName: String) {
         p.setInput(ein, "UTF-8")
         val praefix = basis.encodedPath.trimEnd('/') + "/"
         val liste = ArrayList<Eintrag>()
-        var href = ""; var ordner = false; var groesse = 0L; var geaendert = 0L; var mime = ""; var etag = ""; var rechte = ""
+        var href = ""; var ordner = false; var groesse = 0L; var geaendert = 0L; var mime = ""; var etag = ""; var rechte = ""; var fileId = 0L
         var text = StringBuilder()
         while (p.next() != XmlPullParser.END_DOCUMENT) {
             when (p.eventType) {
                 XmlPullParser.START_TAG -> {
                     text = StringBuilder()
                     if (p.name == "response") {
-                        href = ""; ordner = false; groesse = 0L; geaendert = 0L; mime = ""; etag = ""; rechte = ""
+                        href = ""; ordner = false; groesse = 0L; geaendert = 0L; mime = ""; etag = ""; rechte = ""; fileId = 0L
                     }
                     if (p.name == "collection") ordner = true
                 }
@@ -247,12 +258,13 @@ class WebDav(private val konto: Konto, private val appName: String) {
                         "getcontenttype" -> mime = t
                         "getetag" -> etag = t.trim('"')
                         "permissions" -> rechte = t
+                        "fileid" -> fileId = t.toLongOrNull() ?: 0L
                         "response" -> {
                             val roh = if (href.startsWith(praefix)) href.substring(praefix.length) else href
                             val rel = roh.split('/').filter { it.isNotEmpty() }
                                 .joinToString("/") { URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }
                             liste.add(Eintrag(rel.substringAfterLast('/'), rel, ordner, groesse, geaendert,
-                                if (ordner) "inode/directory" else mime.ifEmpty { "application/octet-stream" }, etag, rechte))
+                                if (ordner) "inode/directory" else mime.ifEmpty { "application/octet-stream" }, etag, rechte, fileId))
                         }
                     }
                     text = StringBuilder()
@@ -273,7 +285,7 @@ class WebDav(private val konto: Konto, private val appName: String) {
         const val PROPFIND = """<?xml version="1.0" encoding="UTF-8"?>
 <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">
   <d:prop>
-    <d:getlastmodified/><d:getcontentlength/><d:getcontenttype/><d:resourcetype/><d:getetag/><oc:size/><oc:permissions/>
+    <d:getlastmodified/><d:getcontentlength/><d:getcontenttype/><d:resourcetype/><d:getetag/><oc:size/><oc:permissions/><oc:fileid/>
   </d:prop>
 </d:propfind>"""
     }
