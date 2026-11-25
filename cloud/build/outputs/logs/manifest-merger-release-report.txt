@@ -1,7 +1,7 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-16:12
-INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-16:12
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-42:12
+INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:2:1-42:12
 	package
 		INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml
 	xmlns:android
@@ -14,20 +14,72 @@ uses-permission#android.permission.ACCESS_NETWORK_STATE
 ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:6:5-79
 	android:name
 		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:6:22-76
-application
-ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:8:5-15:19
-activity#ch.rosenweg4303.cloud.AnmeldenActivity
-ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:9:9-14:75
-	android:label
-		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:12:13-47
-	android:launchMode
-		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:13:13-43
-	android:exported
-		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:11:13-37
-	android:theme
-		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:14:13-72
+uses-permission#ch.rosenweg4303.permission.ANLAGE
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:9:5-73
 	android:name
-		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:10:13-66
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:9:22-70
+queries
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:10:5-12:15
+provider#ch.rosenweg4303.telefon.anlage
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:11:9-74
+	android:authorities
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:11:19-71
+application
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:14:5-41:19
+provider#ch.rosenweg4303.cloud.HochladenStatus
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:16:9-20:70
+	android:authorities
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:18:13-70
+	android:exported
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:19:13-36
+	android:permission
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:20:13-67
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:17:13-65
+activity#ch.rosenweg4303.cloud.RosenwegAnmeldungActivity
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:22:9-34:20
+	android:launchMode
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:25:13-44
+	android:noHistory
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:26:13-37
+	android:exported
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:24:13-36
+	android:theme
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:27:13-72
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:23:13-75
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:path:/anmeldung+data:scheme:${applicationId}
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:28:13-33:29
+action#android.intent.action.VIEW
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:29:17-69
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:29:25-66
+category#android.intent.category.DEFAULT
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:30:17-76
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:30:27-73
+category#android.intent.category.BROWSABLE
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:31:17-78
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:31:27-75
+data
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:32:17-85
+	android:path
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:32:57-82
+	android:scheme
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:32:23-56
+activity#ch.rosenweg4303.cloud.AnmeldenActivity
+ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:35:9-40:61
+	android:label
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:38:13-47
+	android:launchMode
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:39:13-43
+	android:exported
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:37:13-37
+	android:theme
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:40:13-58
+	android:name
+		ADDED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml:36:13-66
 uses-sdk
 INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/stefan/Documents/commons-rosenweg/cloud/src/main/AndroidManifest.xml

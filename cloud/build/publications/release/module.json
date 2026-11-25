@@ -3,7 +3,7 @@
   "component": {
     "group": "ch.rosenweg4303",
     "module": "cloud",
-    "version": "0.4.3",
+    "version": "0.7.0",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -40,13 +40,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.4.3.aar",
-          "url": "cloud-0.4.3.aar",
-          "size": 66728,
-          "sha512": "a824b3b0c98436d29639fd0ce745cdaf643281939307c8ee72ddac2437d27261c53b9bb2970f35f5e5032b4627db7e513d307a6b714af8557f894e7f56232729",
-          "sha256": "1cb25591b41b792ebb8861969d9c155ba1a027fa3f71e973f827bded719e5e44",
-          "sha1": "248d930d69bd324416377dd1e90c3cfd4b245e78",
-          "md5": "32b987a34a5c11c58a3ec705894f9370"
+          "name": "cloud-0.7.0.aar",
+          "url": "cloud-0.7.0.aar",
+          "size": 81641,
+          "sha512": "b78f3d8c809840387e33b8f30d17aa241e77e2fe95f646930b18bf16eef09d26a75eb8f3f06a7a14afa74f7a8c54b7a98b9612f2e66b19ac203c3f98bfe05ea7",
+          "sha256": "80f774d0fd5809e19c5627ba1772e1dfdbb92676859994f13c37d56d6fe9ff6f",
+          "sha1": "69e01998a0f60193e316e567d3595c9805816ffb",
+          "md5": "2c57d62223db840f09ecdec601230539"
         }
       ]
     },
@@ -83,13 +83,13 @@
       ],
       "files": [
         {
-          "name": "cloud-0.4.3.aar",
-          "url": "cloud-0.4.3.aar",
-          "size": 66728,
-          "sha512": "a824b3b0c98436d29639fd0ce745cdaf643281939307c8ee72ddac2437d27261c53b9bb2970f35f5e5032b4627db7e513d307a6b714af8557f894e7f56232729",
-          "sha256": "1cb25591b41b792ebb8861969d9c155ba1a027fa3f71e973f827bded719e5e44",
-          "sha1": "248d930d69bd324416377dd1e90c3cfd4b245e78",
-          "md5": "32b987a34a5c11c58a3ec705894f9370"
+          "name": "cloud-0.7.0.aar",
+          "url": "cloud-0.7.0.aar",
+          "size": 81641,
+          "sha512": "b78f3d8c809840387e33b8f30d17aa241e77e2fe95f646930b18bf16eef09d26a75eb8f3f06a7a14afa74f7a8c54b7a98b9612f2e66b19ac203c3f98bfe05ea7",
+          "sha256": "80f774d0fd5809e19c5627ba1772e1dfdbb92676859994f13c37d56d6fe9ff6f",
+          "sha1": "69e01998a0f60193e316e567d3595c9805816ffb",
+          "md5": "2c57d62223db840f09ecdec601230539"
         }
       ]
     }

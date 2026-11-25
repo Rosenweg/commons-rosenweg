@@ -18,6 +18,20 @@
             android:authorities="${applicationId}.rosenweg.hochladen"
             android:exported="true"
             android:permission="ch.rosenweg4303.permission.ANLAGE" />
+        <!-- Ruecksprung der Rosenweg-Anmeldung (Authentik rosenweg-apps): <applicationId>:/anmeldung -->
+        <activity
+            android:name="ch.rosenweg4303.cloud.RosenwegAnmeldungActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${applicationId}" android:path="/anmeldung" />
+            </intent-filter>
+        </activity>
         <activity
             android:name="ch.rosenweg4303.cloud.AnmeldenActivity"
             android:exported="false"
