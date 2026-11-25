@@ -67,7 +67,8 @@ object RosenwegUpdater {
     /** Bin ich (diese App) die zustaendige? */
     fun zustaendig(c: Context): Boolean {
         if (geraetDa(c)) return false
-        val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) } ?: return false
+        // nur Apps, die den Updater schon enthalten (alte Versionen ohne ihn pruefen nie)
+        val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) } ?: return false
         return erste == c.packageName
     }
 
@@ -104,6 +105,13 @@ object RosenwegUpdater {
         }
     } catch (e: PackageManager.NameNotFoundException) {
         null
+    }
+
+    private fun hatUpdater(c: Context, paket: String): Boolean = try {
+        val p = c.packageManager.getPackageInfo(paket, PackageManager.GET_PROVIDERS)
+        p.providers?.any { it.name == UpdaterStart::class.java.name } == true
+    } catch (e: Exception) {
+        false
     }
 
     internal fun versionCode(p: PackageInfo): Long =
