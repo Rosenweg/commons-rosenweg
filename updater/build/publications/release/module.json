@@ -3,7 +3,7 @@
   "component": {
     "group": "ch.rosenweg4303",
     "module": "updater",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -33,13 +33,13 @@
       ],
       "files": [
         {
-          "name": "updater-0.1.1.aar",
-          "url": "updater-0.1.1.aar",
-          "size": 29077,
-          "sha512": "6388df099062a1e4b85aefddbbf4be88d6dc632e32c267a0968a317f4188a58b748afcd3e8eab571bc466a912e6b58589a27f8f7e9c573b1d70d022d878a04dd",
-          "sha256": "8c5ade7a35bea4c7e4e368a1434b9948f50f21da3dbf4937ce6ae6e5be67ad42",
-          "sha1": "dfa3137a837cbc69ae9398e416c812e8ff75fa1c",
-          "md5": "5b88586ebe7d6e2820cf2b36cf412f85"
+          "name": "updater-0.1.2.aar",
+          "url": "updater-0.1.2.aar",
+          "size": 29218,
+          "sha512": "4a0eecf9ac7d798762f8622a87f5e930822d6bfbf687779f83aec24db34efece9ad43486668276d0a2f100caa96b5bbbd1a54c3c6a765ffcf0d23514cacdfba1",
+          "sha256": "4b386cc78ac88bc3dd13ceaafe2991354d969c8865da56c8ccd8c74f564d64cf",
+          "sha1": "4fc0aaaf6fcb11ccdb965395bad01e9db5f06ad0",
+          "md5": "f3f86f745ed4b2e5fc8d5091e2f7b9e9"
         }
       ]
     },
@@ -76,13 +76,13 @@
       ],
       "files": [
         {
-          "name": "updater-0.1.1.aar",
-          "url": "updater-0.1.1.aar",
-          "size": 29077,
-          "sha512": "6388df099062a1e4b85aefddbbf4be88d6dc632e32c267a0968a317f4188a58b748afcd3e8eab571bc466a912e6b58589a27f8f7e9c573b1d70d022d878a04dd",
-          "sha256": "8c5ade7a35bea4c7e4e368a1434b9948f50f21da3dbf4937ce6ae6e5be67ad42",
-          "sha1": "dfa3137a837cbc69ae9398e416c812e8ff75fa1c",
-          "md5": "5b88586ebe7d6e2820cf2b36cf412f85"
+          "name": "updater-0.1.2.aar",
+          "url": "updater-0.1.2.aar",
+          "size": 29218,
+          "sha512": "4a0eecf9ac7d798762f8622a87f5e930822d6bfbf687779f83aec24db34efece9ad43486668276d0a2f100caa96b5bbbd1a54c3c6a765ffcf0d23514cacdfba1",
+          "sha256": "4b386cc78ac88bc3dd13ceaafe2991354d969c8865da56c8ccd8c74f564d64cf",
+          "sha1": "4fc0aaaf6fcb11ccdb965395bad01e9db5f06ad0",
+          "md5": "f3f86f745ed4b2e5fc8d5091e2f7b9e9"
         }
       ]
     }

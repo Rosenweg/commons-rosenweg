@@ -45,11 +45,16 @@ object RosenwegUpdater {
     private const val NOTIF_ID = 4303
     private const val ARBEIT = "rosenweg-updater"
 
-    /** Reihenfolge der Zustaendigkeit: die erste installierte dieser Apps prueft fuer alle. */
+    /**
+     * Reihenfolge der Zustaendigkeit: die erste installierte dieser Apps (mit Updater) prueft fuer
+     * alle. Seit 25.11.2026 haben ALLE Rosenweg-Apps den Updater (Stefan: Weg 1).
+     */
     val ZUSTAENDIG = listOf(
         "ch.rosenweg4303.messages", "ch.rosenweg4303.phone", "ch.rosenweg4303.filemanager",
         "ch.rosenweg4303.notes", "ch.rosenweg4303.gallery", "ch.rosenweg4303.camera",
         "ch.rosenweg4303.voicerecorder", "ch.rosenweg4303.paint", "ch.rosenweg4303.karten",
+        "ch.rosenweg4303.documents", "ch.rosenweg4303.calendar", "ch.rosenweg4303.contacts",
+        "ch.rosenweg4303.keyboard", "ch.rosenweg4303.home", "ch.rosenweg4303.clock", "ch.rosenweg4303.math",
     )
 
     internal val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
