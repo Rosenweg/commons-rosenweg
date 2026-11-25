@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("CLOUD_VERSION")?.toString() ?: "0.7.0"
+version = findProperty("CLOUD_VERSION")?.toString() ?: "0.8.0"
 
 android {
     namespace = "ch.rosenweg4303.cloud"
@@ -47,6 +47,8 @@ publishing.publications {
 }
 
 dependencies {
+    // Rosenweg Updater: jede Cloud-App kann ohne Geraet alle Rosenweg-Apps aktualisieren
+    api(project(":updater"))
     api(libs.okhttp)
     implementation(libs.androidx.work)
 }

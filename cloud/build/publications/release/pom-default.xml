@@ -9,9 +9,15 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ch.rosenweg4303</groupId>
   <artifactId>cloud</artifactId>
-  <version>0.7.0</version>
+  <version>0.8.0</version>
   <packaging>aar</packaging>
   <dependencies>
+    <dependency>
+      <groupId>ch.rosenweg4303</groupId>
+      <artifactId>updater</artifactId>
+      <version>0.1.0</version>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>

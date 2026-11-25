@@ -3,7 +3,7 @@
   "component": {
     "group": "ch.rosenweg4303",
     "module": "cloud",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -24,6 +24,13 @@
       },
       "dependencies": [
         {
+          "group": "ch.rosenweg4303",
+          "module": "updater",
+          "version": {
+            "requires": "0.1.0"
+          }
+        },
+        {
           "group": "com.squareup.okhttp3",
           "module": "okhttp",
           "version": {
@@ -40,8 +47,8 @@
       ],
       "files": [
         {
-          "name": "cloud-0.7.0.aar",
-          "url": "cloud-0.7.0.aar",
+          "name": "cloud-0.8.0.aar",
+          "url": "cloud-0.8.0.aar",
           "size": 81641,
           "sha512": "b78f3d8c809840387e33b8f30d17aa241e77e2fe95f646930b18bf16eef09d26a75eb8f3f06a7a14afa74f7a8c54b7a98b9612f2e66b19ac203c3f98bfe05ea7",
           "sha256": "80f774d0fd5809e19c5627ba1772e1dfdbb92676859994f13c37d56d6fe9ff6f",
@@ -67,6 +74,13 @@
           }
         },
         {
+          "group": "ch.rosenweg4303",
+          "module": "updater",
+          "version": {
+            "requires": "0.1.0"
+          }
+        },
+        {
           "group": "com.squareup.okhttp3",
           "module": "okhttp",
           "version": {
@@ -83,8 +97,8 @@
       ],
       "files": [
         {
-          "name": "cloud-0.7.0.aar",
-          "url": "cloud-0.7.0.aar",
+          "name": "cloud-0.8.0.aar",
+          "url": "cloud-0.8.0.aar",
           "size": 81641,
           "sha512": "b78f3d8c809840387e33b8f30d17aa241e77e2fe95f646930b18bf16eef09d26a75eb8f3f06a7a14afa74f7a8c54b7a98b9612f2e66b19ac203c3f98bfe05ea7",
           "sha256": "80f774d0fd5809e19c5627ba1772e1dfdbb92676859994f13c37d56d6fe9ff6f",
