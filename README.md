@@ -25,7 +25,7 @@ Rosenweg Commons ist der Fork der Fossify Commons, gegen den alle Rosenweg-Fossi
 | Modul | Koordinate (Version) | Inhalt |
 |---|---|---|
 | `commons` | `org.fossify:commons` (`7.1.3-rosenweg.1`) | Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*` |
-| `cloud` | `ch.rosenweg4303:cloud` (0.9.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm, Rosenweg-Konto mit PKCE, Nextcloud-Login); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵. Bindet `updater` ein. |
+| `cloud` | `ch.rosenweg4303:cloud` (0.10.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵. Bindet `updater` ein. |
 | `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.1.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
 | `updater` | `ch.rosenweg4303:updater` (0.1.2) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
 
@@ -65,6 +65,15 @@ override fun onResume() {
     // ab hier angemeldet: RosenwegAnmeldung.zugangsToken(this) gilt für beide Wege
 }
 ```
+
+Apps mit der Rosenweg-Nextcloud rufen `RosenwegAnmeldeSchirm.zeigenFallsNoetig(this, nextcloud = true)` auf (ab Cloud 0.10.0):
+
+| Fall | Was passiert |
+|---|---|
+| nach der Anmeldung | Der Schirm holt gleich den Nextcloud-Zugang von der Anlage (Schritt „Nextcloud verbinden“, `NextcloudZugang.holenUndSpeichern`). Niemand muss danach noch „Anmelden“ in den Einstellungen antippen. |
+| schon angemeldet, Zugang fehlt | Der Zugang wird im Hintergrund nachgeholt. |
+| Anlage nicht erreichbar | „Rosenweg-Nextcloud“ in den Einstellungen bleibt als Weg von Hand. |
+| Abmelden | Auf dem eigenen Handy meldet „Abmelden“ dort auch die App ab. |
 
 `RosenwegAnmeldung.angemeldet`, `name`, `zugangsToken`, `zugangUngueltig` und `abmelden` decken beide Wege ab. Server: Rosenweg/Website, `api/routes/app-karte.js`.
 
