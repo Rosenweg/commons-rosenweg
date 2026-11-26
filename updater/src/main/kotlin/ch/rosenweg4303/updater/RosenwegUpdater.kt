@@ -122,7 +122,10 @@ object RosenwegUpdater {
     internal fun versionCode(p: PackageInfo): Long =
         if (Build.VERSION.SDK_INT >= 28) p.longVersionCode else @Suppress("DEPRECATION") p.versionCode.toLong()
 
+    // signingInfo gibt es erst ab Android 9 (API 28). Darunter keine Signaturen: der Updater
+    // fasst dann keine App an (statt mit NoSuchFieldError abzustuerzen).
     internal fun signaturen(p: PackageInfo?): Set<String> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return emptySet()
         val si = p?.signingInfo ?: return emptySet()
         val certs = if (si.hasMultipleSigners()) si.apkContentsSigners else si.signingCertificateHistory
         return certs.map { sha256(it.toByteArray()) }.toSet()

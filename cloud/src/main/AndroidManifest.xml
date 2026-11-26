@@ -29,7 +29,9 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="${applicationId}" android:path="/anmeldung" />
+                <!-- Rueckweg <Paketname>:/anmeldung. Ohne Host wertet Android path nicht aus,
+                     deshalb nur das Schema (gleiches Verhalten wie vorher, ohne Lint-Fehler). -->
+                <data android:scheme="${applicationId}" />
             </intent-filter>
         </activity>
         <!-- Gemeinsamer Anmeldeschirm (privates Handy): Karte oder Rosenweg-Konto, wie der
