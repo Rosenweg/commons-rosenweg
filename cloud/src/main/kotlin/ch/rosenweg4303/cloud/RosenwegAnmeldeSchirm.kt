@@ -35,6 +35,14 @@ import ch.rosenweg4303.anmeldeschirm.Kartenleser
  *
  *     if (RosenwegAnmeldeSchirm.zeigenFallsNoetig(this)) return
  *
+ * Apps mit der Rosenweg-Nextcloud (Stefan 26.11.2026: "nach der Anmeldung laeuft sofort alles"):
+ *
+ *     if (RosenwegAnmeldeSchirm.zeigenFallsNoetig(this, nextcloud = true)) return
+ *
+ * Dann holt der Schirm nach der Anmeldung gleich den Nextcloud-Zugang ([NextcloudZugang],
+ * Schritt "Nextcloud verbinden") und speichert das Konto; ist die App schon angemeldet, aber ohne
+ * Zugang, wird er im Hintergrund nachgeholt. Kein "Anmelden" in den Einstellungen noetig.
+ *
  * Flutter-Apps (rosenweg_basis) starten ihn auf Android ueber ihr Plugin
  * (startActivityForResult; RESULT_OK = angemeldet).
  *
@@ -50,11 +58,22 @@ class RosenwegAnmeldeSchirm : Activity() {
          */
         const val EXTRA_ZURUECK_SCHLIESST_APP = "ch.rosenweg4303.cloud.ZURUECK_SCHLIESST_APP"
 
-        /** Anmeldeschirm oeffnen, wenn ohne Geraet niemand angemeldet ist. true = geoeffnet. */
+        /** true: nach der Anmeldung den Nextcloud-Zugang holen und speichern (fehlt er noch). */
+        const val EXTRA_NEXTCLOUD = "ch.rosenweg4303.cloud.NEXTCLOUD"
+
+        /**
+         * Anmeldeschirm oeffnen, wenn ohne Geraet niemand angemeldet ist. true = geoeffnet.
+         * [nextcloud]: App nutzt die Rosenweg-Nextcloud - Zugang nach der Anmeldung gleich holen
+         * bzw. (schon angemeldet) im Hintergrund nachholen.
+         */
         @JvmStatic
-        fun zeigenFallsNoetig(a: Activity): Boolean {
-            if (!RosenwegAnmeldung.anmeldungNoetig(a)) return false
-            a.startActivity(Intent(a, RosenwegAnmeldeSchirm::class.java))
+        @JvmOverloads
+        fun zeigenFallsNoetig(a: Activity, nextcloud: Boolean = false): Boolean {
+            if (!RosenwegAnmeldung.anmeldungNoetig(a)) {
+                if (nextcloud) NextcloudZugang.nachholenFallsNoetig(a)
+                return false
+            }
+            a.startActivity(Intent(a, RosenwegAnmeldeSchirm::class.java).putExtra(EXTRA_NEXTCLOUD, nextcloud))
             return true
         }
     }
@@ -74,6 +93,8 @@ class RosenwegAnmeldeSchirm : Activity() {
     private val zeilen = mutableListOf<TextView>()
     @Volatile private var laeuft = false
     @Volatile private var prueft = false
+    /** Nach der Anmeldung: Nextcloud-Zugang wird geholt. */
+    @Volatile private var holtNextcloud = false
     private val entpreller = Kartenleser.Entpreller()
 
     private val appName: String by lazy {
@@ -89,6 +110,7 @@ class RosenwegAnmeldeSchirm : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (holtNextcloud) return
         if (!RosenwegAnmeldung.anmeldungNoetig(this)) {   // z.B. zurueck aus dem Browser, angemeldet
             fertig()
             return
@@ -106,14 +128,71 @@ class RosenwegAnmeldeSchirm : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        // Schon angemeldet (Nextcloud wird noch geholt): nur den Schirm schliessen, das Holen laeuft weiter
+        if (!RosenwegAnmeldung.anmeldungNoetig(this)) {
+            fertigSchliessen()
+            return
+        }
         // Ohne Anmeldung kann die App nichts: zurueck schliesst sie.
         setResult(RESULT_CANCELED)
         if (intent?.getBooleanExtra(EXTRA_ZURUECK_SCHLIESST_APP, true) == false) finish() else finishAffinity()
     }
 
+    /** Angemeldet: falls gewuenscht noch den Nextcloud-Zugang holen, dann schliessen. */
     private fun fertig() {
+        if (intent?.getBooleanExtra(EXTRA_NEXTCLOUD, false) == true && !RosenwegAnmeldung.geraetDa(this) &&
+            KontoSpeicher(this).laden() == null
+        ) {
+            nextcloudHolen()
+            return
+        }
+        fertigSchliessen()
+    }
+
+    private fun fertigSchliessen() {
         setResult(RESULT_OK)
         finish()
+    }
+
+    // ─── Nextcloud ──────────────────────────────────────────────────────────
+
+    /** Schritt "Nextcloud verbinden": App-Passwort von der Anlage ([NextcloudZugang]). */
+    private fun nextcloudHolen() {
+        if (holtNextcloud) return
+        holtNextcloud = true
+        prueft = true
+        leserAus()
+        if (zeilen.isEmpty()) {   // Weg ueber das Rosenweg-Konto (Browser): Schritte jetzt zeigen
+            ablaufZeigen(listOf("Anmeldung für $appName"))
+            O.schrittStand(zeilen[0], O.OK, RosenwegAnmeldung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" })
+        }
+        val z = O.schrittZeile(this, "Nextcloud verbinden")
+        schritte.addView(z)
+        zeilen.add(z)
+        O.schrittStand(z, O.LAEUFT, null)
+        val app = applicationContext
+        Thread {
+            val fehler = try {
+                NextcloudZugang.holenUndSpeichern(app)
+                null
+            } catch (e: NextcloudZugang.Fehler) {
+                e.message ?: "nicht möglich"
+            } catch (e: Exception) {
+                Log.w(TAG, "Nextcloud: ${e.javaClass.simpleName}")
+                "keine Verbindung"
+            }
+            ui.post {
+                if (isFinishing) return@post
+                if (fehler == null) {
+                    O.schrittStand(z, O.OK, null)
+                    ui.postDelayed({ fertigSchliessen() }, 600)
+                } else {
+                    // Die App ist angemeldet; die Nextcloud geht spaeter von Hand
+                    O.schrittStand(z, O.FEHLER, "$fehler – später unter Einstellungen → Rosenweg-Nextcloud")
+                    ui.postDelayed({ fertigSchliessen() }, 3500)
+                }
+            }
+        }.start()
     }
 
     // ─── Karte ──────────────────────────────────────────────────────────────
@@ -145,7 +224,7 @@ class RosenwegAnmeldeSchirm : Activity() {
                 ui.post {
                     O.schrittStand(zeilen[0], O.OK, null)
                     O.schrittStand(zeilen[1], O.OK, KartenSitzung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" })
-                    ui.postDelayed({ prueft = false; fertig() }, 800)
+                    ui.postDelayed({ prueft = false; if (!isFinishing) fertig() }, 800)
                 }
             } catch (e: KartenSitzung.Fehler) {
                 ui.post { fehler(e.message ?: "Anmelden fehlgeschlagen") }
@@ -193,7 +272,7 @@ class RosenwegAnmeldeSchirm : Activity() {
     }
 
     /** Karte erkannt: Schritte wie beim Anmelden am geteilten Telefon. */
-    private fun ablaufZeigen() {
+    private fun ablaufZeigen(titel: List<String> = listOf("Rosenweg-Karte prüfen", "Anmeldung für $appName")) {
         kopf.text = O.ANMELDEN
         kopf.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
         kopf.setTextColor(Color.WHITE)
@@ -201,13 +280,13 @@ class RosenwegAnmeldeSchirm : Activity() {
         logoGroesse(110)
         schritte.removeAllViews()
         zeilen.clear()
-        for (t in listOf("Rosenweg-Karte prüfen", "Anmeldung für $appName")) {
+        for (t in titel) {
             val z = O.schrittZeile(this, t)
             schritte.addView(z)
             zeilen.add(z)
         }
         schrittRahmen.visibility = View.VISIBLE
-        O.schrittStand(zeilen[0], O.LAEUFT, "Karte erkannt")
+        O.schrittStand(zeilen[0], O.LAEUFT, if (holtNextcloud) null else "Karte erkannt")
     }
 
     /** Wie der Sperrbildschirm: Schritt rot mit Ursache, nach 8 s zurueck. */

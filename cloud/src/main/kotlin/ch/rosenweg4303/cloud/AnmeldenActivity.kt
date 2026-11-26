@@ -78,11 +78,16 @@ class AnmeldenActivity : Activity() {
             fertig()
             return
         }
-        // zurueck vom gemeinsamen Anmeldeschirm: angemeldet -> Nextcloud-Zugang holen
+        // zurueck vom gemeinsamen Anmeldeschirm: Zugang geholt -> fertig; sonst (Anlage ging nicht)
+        // hier weiter (nochmals holen, sonst Login-Flow im Browser)
         if (wartetAufSchirm) {
             wartetAufSchirm = false
-            if (RosenwegAnmeldung.angemeldet(this) && KontoSpeicher(this).laden() == null) {
-                anmelden()
+            if (RosenwegAnmeldung.angemeldet(this)) {
+                if (KontoSpeicher(this).laden() != null) {
+                    fertig()
+                } else {
+                    anmelden()
+                }
                 return
             }
         }
@@ -147,9 +152,11 @@ class AnmeldenActivity : Activity() {
      */
     private fun anmelden() {
         if (!RosenwegAnmeldung.geraetDa(this) && !RosenwegAnmeldung.angemeldet(this)) {
+            // Der Schirm holt nach der Anmeldung gleich den Nextcloud-Zugang. Ohne Anmeldung ist die
+            // App nicht nutzbar: "Zurueck" schliesst sie (Standard, Stefan 26.11.2026).
             wartetAufSchirm = true
             startActivity(Intent(this, RosenwegAnmeldeSchirm::class.java)
-                .putExtra(RosenwegAnmeldeSchirm.EXTRA_ZURUECK_SCHLIESST_APP, false))
+                .putExtra(RosenwegAnmeldeSchirm.EXTRA_NEXTCLOUD, true))
             return
         }
         if (!RosenwegAnmeldung.geraetDa(this)) {
@@ -224,11 +231,16 @@ class AnmeldenActivity : Activity() {
             Toast.makeText(this, "Noch $offen Datei(en) nicht hochgeladen — erst danach abmelden.", Toast.LENGTH_LONG).show()
             return
         }
+        // Eigenes Handy: Nextcloud-Zugang und Anmeldung gehoeren zusammen (der Zugang kommt nach der
+        // Anmeldung von selbst) - Abmelden meldet auch diese App ab, beim naechsten Oeffnen kommt der
+        // Anmeldeschirm.
+        val privat = !RosenwegAnmeldung.geraetDa(this)
         AlertDialog.Builder(this)
-            .setMessage("Von der Rosenweg-Nextcloud abmelden?")
+            .setMessage(if (privat) "Von der Rosenweg-Nextcloud und aus dieser App abmelden?" else "Von der Rosenweg-Nextcloud abmelden?")
             .setPositiveButton("Abmelden") { _, _ ->
                 KontoSpeicher(this).loeschen()
                 Thread { WebDav(konto, appName()).appPasswortWiderrufen() }.start()
+                if (privat) RosenwegAnmeldung.abmelden(this)
                 anzeigen()
             }
             .setNegativeButton("Abbrechen", null)
