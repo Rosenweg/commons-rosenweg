@@ -1,46 +1,28 @@
-# Commons
-Some helper functions, dialogs, etc. used by multiple Fossify apps.</br>
-For reporting bugs/features that affect multiple apps, please use the <a href="https://github.com/FossifyOrg/General-Discussion">General Discussion</a> repository.
+# Rosenweg Commons
 
-## Local development
+Gemeinsame Bibliothek der Rosenweg-Apps für die Smartphones der Siedlung Rosenweg in Kaiseraugst. Sie besteht aus dem Fork der Fossify Commons, gegen den alle Rosenweg-Fossify-Apps bauen, und zwei eigenen Modulen für die Rosenweg-Infrastruktur. Diese Bibliothek ist keine App und wird nicht installiert.
 
-### Publishing to local Maven repository
+## Module
 
-To publish this library to your local Maven repository (`~/.m2/repository`), use:
+- **`commons`** (`org.fossify:commons`, Rosenweg-Fassung `7.1.3-rosenweg.1`): Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*`.
+- **`cloud`** (`ch.rosenweg4303:cloud`): Zugang zur Rosenweg-Nextcloud über WebDAV. Anmeldung per Nextcloud-Login (App-Passwort) oder mit dem Rosenweg-Konto (öffentlicher Client, PKCE; das Refresh-Token liegt verschlüsselt im Android-Keystore). Auf geteilten Telefonen hat der Zugang von Rosenweg Gerät Vorrang. Dazu: Upload-Warteschlange (lokal gelöscht wird erst nach Bestätigung), Hinweis beim ersten Start, Auflisten und Streamen der eigenen Dateien und Einstellungen pro Person in `Persönlich/.rosenweg/`. Bindet `updater` ein.
+- **`updater`** (`ch.rosenweg4303:updater`): Rosenweg Updater. Auf Handys ohne Rosenweg Gerät prüft genau eine installierte Rosenweg-App den App-Katalog der Telefonanlage und aktualisiert alle installierten Rosenweg-Apps. Jede APK wird vor der Installation geprüft (Grösse, SHA-256, Paketname, Version, Signatur gleich der eigenen); Android lässt jede Installation bestätigen.
+
+## Verwendung
+
+Die Rosenweg-Apps holen die Bibliothek aus dem lokalen Maven-Repository (`mavenLocal()`):
 
 ```bash
-# Publish with a custom version
-./gradlew -PVERSION=1.2.3 publishToMavenLocal
-
-# Publish with git commit hash as version
-./gradlew -PVERSION=$(git rev-parse --short HEAD) publishToMavenLocal
+# Zweig rosenweg
+./gradlew -PVERSION=7.1.3-rosenweg.1 publishToMavenLocal
 ```
 
-The version can also be set via `VERSION` environment variable.
+Das veröffentlicht `org.fossify:commons:7.1.3-rosenweg.1` sowie `ch.rosenweg4303:cloud` und `ch.rosenweg4303:updater` (Versionen in `cloud/build.gradle.kts` und `updater/build.gradle.kts`, überschreibbar mit `-PCLOUD_VERSION=…` bzw. `-PUPDATER_VERSION=…`). Danach die Apps bauen, z.B. `./gradlew assembleFossRelease`.
 
-### Using locally published build in other apps
+Die Apps selbst gibt es unter [www.rosenweg4303.ch/apps](https://www.rosenweg4303.ch/apps).
 
-1. **Ensure `mavenLocal()` is in the app's repositories** (`settings.gradle.kts`):
+## Herkunft und Lizenz
 
-   ```kotlin
-   dependencyResolutionManagement {
-       repositories {
-           mavenCentral()
-           google()
-           maven { setUrl("https://jitpack.io") }
-           mavenLocal() // already exists in Fossify app repos
-       }
-   }
-   ```
+Fork von [Fossify Commons](https://github.com/FossifyOrg/commons). Der Zweig `main` folgt dem Original, die Rosenweg-Anpassungen und die Module `cloud` und `updater` liegen im Zweig `rosenweg`. Herzlichen Dank an das Fossify-Team und alle Mitwirkenden für die solide Grundlage.
 
-2. **Update the commons version** in the app's `gradle/libs.versions.toml`:
-
-   ```toml
-   [versions]
-   commons = "1.2.3"  # Use the version you published
-   ```
-
-3. **Sync and build.**
-
-> [!TIP]
-> Gradle resolves dependencies in repository order. Since `mavenLocal()` is listed last, it will only be used if the version isn't found in other repositories. To force using local, use a unique version like `1.2.3-local` or a git commit hash.
+Lizenz: GNU General Public License v3.0, siehe [LICENSE](LICENSE).

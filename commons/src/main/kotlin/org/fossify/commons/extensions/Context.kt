@@ -1,5 +1,7 @@
 package org.fossify.commons.extensions
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.Manifest
 import android.app.Activity
 import android.app.Application
@@ -597,6 +599,8 @@ fun Context.canAccessGlobalConfig(): Boolean {
 }
 
 fun Context.hasThankYouUnlock(): Boolean {
+    // Rosenweg: alle Funktionen frei, ohne Thank-You-App.
+    if (true) return true
     return when {
         isThankYouInstalled() -> {
             if (!baseConfig.hadThankYouInstalled) {
@@ -1077,9 +1081,10 @@ fun Context.getCornerRadius() = resources.getDimension(R.dimen.rounded_corner_ra
 
 // we need the Default Dialer functionality only in Simple Dialer and in Simple Contacts for now
 fun Context.isDefaultDialer(): Boolean {
-    return if (!packageName.startsWith("org.fossify.contacts") && !packageName.startsWith("org.fossify.phone")) {
+    val telefonOderKontakte = Rosenweg.istApp(packageName, "contacts") || Rosenweg.istApp(packageName, "phone")
+    return if (!telefonOderKontakte) {
         true
-    } else if ((packageName.startsWith("org.fossify.contacts") || packageName.startsWith("org.fossify.phone")) && isQPlus()) {
+    } else if (isQPlus()) {
         val roleManager = getSystemService(RoleManager::class.java)
         roleManager!!.isRoleAvailable(RoleManager.ROLE_DIALER) && roleManager.isRoleHeld(RoleManager.ROLE_DIALER)
     } else {

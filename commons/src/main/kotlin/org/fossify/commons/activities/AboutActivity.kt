@@ -68,47 +68,28 @@ class AboutActivity : BaseComposeActivity() {
             AppThemeSurface {
                 val showGoogleRelations =
                     remember { resources.getBoolean(R.bool.is_google_play_build) }
-                val showGithubRelations = showGithubRelations()
-                val showDonationLinks = remember { !isThankYouInstalled() || !showGoogleRelations }
-                val onEmailClickAlertDialogState = getOnEmailClickAlertDialogState()
                 AboutScreen(
                     goBack = ::finish,
-                    helpUsSection = {
-                        HelpUsSection(
-                            onRateThisAppClick = ::onRateThisAppClick,
-                            onInviteClick = ::onInviteClick,
-                            onContributorsClick = ::onContributorsClick,
-                            showDonate = showDonationLinks,
-                            onDonateClick = ::onDonateClick,
-                            showInvite = showGoogleRelations || showGithubRelations,
-                            showRateUs = showGoogleRelations
-                        )
-                    },
+                    // Rosenweg: keine Spenden-, Bewertungs-, Einladungs- und Social-Links,
+                    // keine E-Mail an Fossify, kein Issue-Tracker. Lokale Hilfe (FAQ) bleibt.
+                    helpUsSection = {},
                     aboutSection = {
                         val setupFAQ = showFAQ()
-                        if (setupFAQ || showGithubRelations) {
+                        if (setupFAQ) {
                             AboutSection(
-                                setupFAQ = setupFAQ,
-                                setupKnownIssues = showGithubRelations,
+                                setupFAQ = true,
+                                setupKnownIssues = false,
                                 onFAQClick = ::launchFAQActivity,
-                                onKnownIssuesClick = ::launchIssueTracker,
-                                onEmailClick = {
-                                    onEmailClick(onEmailClickAlertDialogState::show)
-                                }
+                                onKnownIssuesClick = {},
+                                onEmailClick = {}
                             )
                         }
                     },
-                    socialSection = {
-                        SocialSection(
-                            onGithubClick = ::onGithubClick,
-                            onRedditClick = ::onRedditClick,
-                            onTelegramClick = ::onTelegramClick
-                        )
-                    }
+                    socialSection = {}
                 ) {
                     val (versionName, packageName) = getPackageInfo()
                     OtherSection(
-                        showMoreApps = showGoogleRelations,
+                        showMoreApps = false,
                         onMoreAppsClick = ::launchMoreAppsFromUsIntent,
                         onPrivacyPolicyClick = ::onPrivacyPolicyClick,
                         onLicenseClick = ::onLicenseClick,
@@ -279,10 +260,13 @@ class AboutActivity : BaseComposeActivity() {
     }
 
     private fun onPrivacyPolicyClick() {
-        val appId = baseConfig.appId.removeSuffix(".debug")
-            .removePrefix("org.fossify.")
-        val url = "https://www.fossify.org/policy/$appId"
-        launchViewIntent(url)
+        // Rosenweg: lokaler Hinweis statt Link auf fossify.org.
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.privacy_policy)
+            .setMessage("Diese App sendet keine Daten ins Internet. Sie ist eine Rosenweg-Anpassung " +
+                "der freien Fossify-App (GPL-3.0); der Quellcode liegt unter github.com/Rosenweg.")
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun onLicenseClick() {

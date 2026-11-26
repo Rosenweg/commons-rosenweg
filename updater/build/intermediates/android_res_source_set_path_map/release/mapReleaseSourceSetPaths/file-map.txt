@@ -1,0 +1,9 @@
+ch.rosenweg4303.updater-pngs-0 /Users/stefan/Documents/commons-rosenweg/updater/build/generated/res/pngs/release
+ch.rosenweg4303.updater-updated_navigation_xml-1 /Users/stefan/Documents/commons-rosenweg/updater/build/generated/updated_navigation_xml/release
+ch.rosenweg4303.updater-mergeReleaseResources-2 /Users/stefan/Documents/commons-rosenweg/updater/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+ch.rosenweg4303.updater-mergeReleaseResources-3 /Users/stefan/Documents/commons-rosenweg/updater/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+ch.rosenweg4303.updater-release-4 /Users/stefan/Documents/commons-rosenweg/updater/build/intermediates/merged_res/release/mergeReleaseResources
+ch.rosenweg4303.updater-release-5 /Users/stefan/Documents/commons-rosenweg/updater/build/intermediates/packaged_res/release/packageReleaseResources
+ch.rosenweg4303.updater-main-6 /Users/stefan/Documents/commons-rosenweg/updater/src/main/res
+ch.rosenweg4303.updater-release-7 /Users/stefan/Documents/commons-rosenweg/updater/src/release/res
+gradleHome-0 /Users/stefan/.gradle

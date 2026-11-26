@@ -1,5 +1,7 @@
 package org.fossify.commons.activities
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.graphics.Color
@@ -757,7 +759,7 @@ class CustomizationActivity : BaseSimpleActivity() {
     }
 
     private fun pickPrimaryColor() {
-        if (!packageName.startsWith("org.fossify.", true) && baseConfig.appRunCount > 50) {
+        if (!Rosenweg.istUnsereApp(packageName) && baseConfig.appRunCount > 50) {
             finish()
             return
         }

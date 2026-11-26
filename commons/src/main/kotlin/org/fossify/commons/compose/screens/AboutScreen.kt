@@ -164,11 +164,7 @@ internal fun AboutSection(
             )
         }
 
-        TwoLinerTextItem(
-            click = onEmailClick,
-            text = stringResource(id = R.string.my_email),
-            icon = R.drawable.ic_contact_support_outline_vector
-        )
+        // Rosenweg: keine E-Mail an Fossify (kein E-Mail-Programm, keine Rueckkanaele).
         SettingsHorizontalDivider()
     }
 }

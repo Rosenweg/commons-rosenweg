@@ -1,5 +1,7 @@
 package org.fossify.commons.activities
 
+import org.fossify.commons.helpers.Rosenweg
+
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.RecoverableSecurityException
@@ -195,7 +197,8 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         WindowCompat.enableEdgeToEdge(window)
         registerBackPressedCallback()
 
-        if (!packageName.startsWith("org.fossify.", true)) {
+        // Rosenweg: keine "veraenderte Version"-Warnung fuer die eigenen Forks.
+        if (!Rosenweg.istUnsereApp(packageName)) {
             if ((0..50).random() == 10 || baseConfig.appRunCount % 100 == 0) {
                 showModdedAppWarning()
             }
@@ -649,7 +652,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
     }
 
     fun startCustomizationActivity() {
-        if (!packageName.contains("yfissof".reversed(), true)) {
+        if (!Rosenweg.istUnsereApp(packageName)) {
             if (baseConfig.appRunCount > 100) {
                 showModdedAppWarning()
                 return
@@ -685,7 +688,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
     // synchronous return value determines only if we are showing the SAF dialog, callback result tells if the SD or OTG permission has been granted
     fun handleSAFDialog(path: String, callback: (success: Boolean) -> Unit): Boolean {
         hideKeyboard()
-        return if (!packageName.startsWith("org.fossify")) {
+        return if (!Rosenweg.istUnsereApp(packageName)) {
             callback(true)
             false
         } else if (isShowingSAFDialog(path) || isShowingOTGDialog(path)) {
@@ -703,7 +706,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         callback: (success: Boolean) -> Unit
     ): Boolean {
         hideKeyboard()
-        return if (!packageName.startsWith("org.fossify")) {
+        return if (!Rosenweg.istUnsereApp(packageName)) {
             callback(true)
             false
         } else if (isShowingSAFDialogSdk30(path, showRationale)) {
@@ -733,7 +736,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         callback: (success: Boolean) -> Unit
     ): Boolean {
         hideKeyboard()
-        return if (!packageName.startsWith("org.fossify")) {
+        return if (!Rosenweg.istUnsereApp(packageName)) {
             callback(true)
             false
         } else if (isShowingSAFCreateDocumentDialogSdk30(path)) {
@@ -751,7 +754,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         callback: (success: Boolean) -> Unit
     ): Boolean {
         hideKeyboard()
-        return if (!packageName.startsWith("org.fossify")) {
+        return if (!Rosenweg.istUnsereApp(packageName)) {
             callback(true)
             false
         } else if (isShowingAndroidSAFDialog(path, openInSystemAppAllowed)) {
@@ -1322,8 +1325,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
     }
 
     private fun getExportSettingsFilename(): String {
-        val appName = baseConfig.appId.removeSuffix(".debug")
-            .removePrefix("org.fossify.")
+        val appName = Rosenweg.kurzname(baseConfig.appId)
         return "$appName-settings_${getCurrentFormattedDateTime()}"
     }
 

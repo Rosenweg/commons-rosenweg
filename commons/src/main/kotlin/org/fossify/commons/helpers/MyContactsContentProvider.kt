@@ -14,7 +14,9 @@ import org.fossify.commons.models.contacts.Contact
 // used for sharing privately stored contacts in Simple Contacts with Simple Dialer, Simple SMS Messenger and Simple Calendar Pro
 class MyContactsContentProvider {
     companion object {
-        private const val AUTHORITY = "org.fossify.commons.contactsprovider"
+        // Rosenweg: eigene Authority, sonst kollidiert Rosenweg Kontakte auf privaten
+        // Handys mit installierten Original-Fossify-Kontakten (gleiche Authority = Installation verweigert).
+        private const val AUTHORITY = "ch.rosenweg4303.commons.contactsprovider"
         val CONTACTS_CONTENT_URI = Uri.parse("content://$AUTHORITY/contacts")
 
         const val FAVORITES_ONLY = "favorites_only"
@@ -29,7 +31,7 @@ class MyContactsContentProvider {
         fun getSimpleContacts(context: Context, cursor: Cursor?): ArrayList<SimpleContact> {
             val contacts = ArrayList<SimpleContact>()
             val packageName = context.packageName.removeSuffix(".debug")
-            if (packageName != "org.fossify.phone" && packageName != "org.fossify.messages" && packageName != "org.fossify.calendar") {
+            if (!Rosenweg.istApp(packageName, "phone") && !Rosenweg.istApp(packageName, "messages") && !Rosenweg.istApp(packageName, "calendar")) {
                 return contacts
             }
 
@@ -65,7 +67,7 @@ class MyContactsContentProvider {
         fun getContacts(context: Context, cursor: Cursor?): ArrayList<Contact> {
             val contacts = ArrayList<Contact>()
             val packageName = context.packageName.removeSuffix(".debug")
-            if (packageName != "org.fossify.phone" && packageName != "org.fossify.messages" && packageName != "org.fossify.calendar") {
+            if (!Rosenweg.istApp(packageName, "phone") && !Rosenweg.istApp(packageName, "messages") && !Rosenweg.istApp(packageName, "calendar")) {
                 return contacts
             }
 

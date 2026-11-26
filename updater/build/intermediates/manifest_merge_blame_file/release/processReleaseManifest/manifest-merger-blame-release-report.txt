@@ -1,0 +1,110 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="ch.rosenweg4303.updater" >
+4
+5    <uses-sdk android:minSdkVersion="26" />
+5-->INJECTED
+5-->INJECTED
+6    <!-- Rosenweg Updater: Katalog der Anlage lesen, APKs laden, dem Android-Installer uebergeben -->
+7    <uses-permission android:name="android.permission.INTERNET" />
+7-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:4:5-67
+7-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:4:22-64
+8    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+8-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:5:5-79
+8-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:5:22-76
+9    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+9-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:6:5-83
+9-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:6:22-80
+10    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+10-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:7:5-77
+10-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:7:22-74
+11
+12    <!-- installierte Rosenweg-Apps sehen (Version, Signatur). Liste = Katalog der Anlage. -->
+13    <queries>
+13-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:10:5-28:15
+14        <package android:name="ch.rosenweg4303.telefon" />
+14-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:11:9-59
+14-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:11:18-56
+15        <package android:name="ch.rosenweg4303.keyboard" />
+15-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:12:9-60
+15-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:12:18-57
+16        <package android:name="ch.rosenweg4303.home" />
+16-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:13:9-56
+16-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:13:18-53
+17        <package android:name="ch.rosenweg4303.phone" />
+17-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:14:9-57
+17-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:14:18-54
+18        <package android:name="ch.rosenweg4303.contacts" />
+18-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:15:9-60
+18-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:15:18-57
+19        <package android:name="ch.rosenweg4303.gallery" />
+19-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:16:9-59
+19-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:16:18-56
+20        <package android:name="ch.rosenweg4303.camera" />
+20-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:17:9-58
+20-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:17:18-55
+21        <package android:name="ch.rosenweg4303.filemanager" />
+21-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:18:9-63
+21-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:18:18-60
+22        <package android:name="ch.rosenweg4303.calendar" />
+22-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:19:9-60
+22-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:19:18-57
+23        <package android:name="ch.rosenweg4303.clock" />
+23-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:20:9-57
+23-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:20:18-54
+24        <package android:name="ch.rosenweg4303.math" />
+24-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:21:9-56
+24-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:21:18-53
+25        <package android:name="ch.rosenweg4303.notes" />
+25-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:22:9-57
+25-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:22:18-54
+26        <package android:name="ch.rosenweg4303.documents" />
+26-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:23:9-61
+26-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:23:18-58
+27        <package android:name="ch.rosenweg4303.voicerecorder" />
+27-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:24:9-65
+27-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:24:18-62
+28        <package android:name="ch.rosenweg4303.paint" />
+28-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:25:9-57
+28-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:25:18-54
+29        <package android:name="ch.rosenweg4303.messages" />
+29-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:26:9-60
+29-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:26:18-57
+30        <package android:name="ch.rosenweg4303.karten" />
+30-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:27:9-58
+30-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:27:18-55
+31    </queries>
+32
+33    <application>
+33-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:30:5-44:19
+34        <activity
+34-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:31:9-36:54
+35            android:name="ch.rosenweg4303.updater.UpdateActivity"
+35-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:32:13-66
+36            android:exported="false"
+36-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:33:13-37
+37            android:label="Rosenweg-Updates"
+37-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:34:13-45
+38            android:launchMode="singleTop"
+38-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:35:13-43
+39            android:theme="@style/RosenwegUpdater" />
+39-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:36:13-51
+40
+41        <receiver
+41-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:37:9-39:40
+42            android:name="ch.rosenweg4303.updater.InstallStatus"
+42-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:38:13-65
+43            android:exported="false" />
+43-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:39:13-37
+44
+45        <provider
+45-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:40:9-43:40
+46            android:name="ch.rosenweg4303.updater.UpdaterStart"
+46-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:41:13-64
+47            android:authorities="${applicationId}.rosenweg.updater"
+47-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:42:13-68
+48            android:exported="false" />
+48-->/Users/stefan/Documents/commons-rosenweg/updater/src/main/AndroidManifest.xml:43:13-37
+49    </application>
+50
+51</manifest>
