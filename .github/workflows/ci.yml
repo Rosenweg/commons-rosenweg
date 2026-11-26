@@ -67,7 +67,7 @@ jobs:
       - name: Bauen
         run: ./gradlew $BAUEN
       - name: Unit-Tests
-        run: ./gradlew $TESTEN
+        run: ./gradlew --continue $TESTEN
       - name: Testberichte
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ failure() }}
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/vorbereiten
       - name: Android-Lint
-        run: ./gradlew $LINT
+        run: ./gradlew --continue $LINT
       - name: Lint-Berichte
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
@@ -101,13 +101,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/vorbereiten
       - name: detekt
-        run: ./gradlew detekt
+        id: detekt
+        run: ./gradlew --continue detekt
+      # Bei neuen Funden: Vorschlag fuer eine neue Baseline als Artefakt (nur uebernehmen, wenn
+      # die Funde wirklich bewusst hingenommen werden; sonst den Code richten).
+      - name: detekt-Baseline-Vorschlag
+        if: ${{ failure() && steps.detekt.conclusion == 'failure' }}
+        run: ./gradlew --continue detektBaseline
       - name: detekt-Berichte
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ failure() }}
         with:
           name: detekt-berichte
-          path: "**/build/reports/detekt/"
+          path: |
+            **/build/reports/detekt/
+            **/detekt-baseline.xml
           if-no-files-found: ignore
 
   ci-gate:
