@@ -44,6 +44,12 @@ class RosenwegAnmeldeSchirm : Activity() {
     companion object {
         private const val TAG = "RosenwegAnmeldeSchirm"
 
+        /**
+         * false: "Zurueck" schliesst nur den Schirm (die App geht auch ohne Anmeldung, z.B. Kamera mit
+         * Nextcloud). Standard true: ohne Anmeldung kann die App nichts, "Zurueck" schliesst sie.
+         */
+        const val EXTRA_ZURUECK_SCHLIESST_APP = "ch.rosenweg4303.cloud.ZURUECK_SCHLIESST_APP"
+
         /** Anmeldeschirm oeffnen, wenn ohne Geraet niemand angemeldet ist. true = geoeffnet. */
         @JvmStatic
         fun zeigenFallsNoetig(a: Activity): Boolean {
@@ -102,7 +108,7 @@ class RosenwegAnmeldeSchirm : Activity() {
     override fun onBackPressed() {
         // Ohne Anmeldung kann die App nichts: zurueck schliesst sie.
         setResult(RESULT_CANCELED)
-        finishAffinity()
+        if (intent?.getBooleanExtra(EXTRA_ZURUECK_SCHLIESST_APP, true) == false) finish() else finishAffinity()
     }
 
     private fun fertig() {
