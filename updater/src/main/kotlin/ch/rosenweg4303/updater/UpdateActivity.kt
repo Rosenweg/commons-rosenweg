@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import java.io.File
+import java.lang.ref.WeakReference
 
 /**
  * Liste der Updates mit "Alle aktualisieren". Laedt und prueft eine APK nach der anderen und
@@ -135,6 +136,11 @@ class UpdateActivity : Activity() {
     companion object {
         internal val warteschlange = mutableListOf<RosenwegUpdater.Update>()
         internal var laeuft = false
-        internal var aktiv: UpdateActivity? = null
+        // Nur schwach gehalten (InstallStatus meldet an die sichtbare Activity), damit keine
+        // beendete Activity im Speicher haengen bleibt.
+        private var aktivRef: WeakReference<UpdateActivity>? = null
+        internal var aktiv: UpdateActivity?
+            get() = aktivRef?.get()
+            set(v) { aktivRef = v?.let { WeakReference(it) } }
     }
 }
