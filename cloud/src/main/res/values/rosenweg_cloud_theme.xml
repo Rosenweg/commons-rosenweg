@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Anmelde-/Statusseite der Rosenweg-Nextcloud -->
-    <style name="RosenwegCloud.Anmelden" parent="@android:style/Theme.DeviceDefault.DayNight" />
+    <style name="RosenwegCloud.Anmelden" parent="@android:style/Theme.DeviceDefault.Light" /><!-- DayNight erst ab API 29: values-v29 -->
 </resources>
