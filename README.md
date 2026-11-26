@@ -19,6 +19,19 @@ Die Rosenweg-Apps holen die Bibliothek aus dem lokalen Maven-Repository (`mavenL
 
 Das veröffentlicht `org.fossify:commons:7.1.3-rosenweg.1` sowie `ch.rosenweg4303:cloud` und `ch.rosenweg4303:updater` (Versionen in `cloud/build.gradle.kts` und `updater/build.gradle.kts`, überschreibbar mit `-PCLOUD_VERSION=…` bzw. `-PUPDATER_VERSION=…`). Danach die Apps bauen, z.B. `./gradlew assembleFossRelease`.
 
+### Über GitHub Packages
+
+Bei jedem Tag `v*` veröffentlicht der Workflow `.github/workflows/pakete.yml` alle Module nach GitHub Packages (Maven): `https://maven.pkg.github.com/Rosenweg/commons-rosenweg`.
+- `org.fossify:commons` bekommt als Version den Tag ohne `v`.
+- `ch.rosenweg4303:cloud`, `anmeldeschirm` und `updater` behalten die Versionen aus ihren `build.gradle.kts`.
+- Eine schon vorhandene Version wird übersprungen.
+
+Auch öffentliche Maven-Pakete brauchen zum Herunterladen eine Anmeldung. Die Apps lesen sie so:
+- lokal mit `gpr.user` und `gpr.key` aus `~/.gradle/gradle.properties`. `gpr.key` ist ein Token mit `read:packages`, z. B. `gh auth token`.
+- in GitHub Actions mit `GPR_TOKEN` (Org-Secret) oder `GITHUB_TOKEN`.
+
+`mavenLocal()` bleibt als Rückfall.
+
 Die Apps selbst gibt es unter [www.rosenweg4303.ch/apps](https://www.rosenweg4303.ch/apps).
 
 ## Herkunft und Lizenz
