@@ -24,6 +24,11 @@ import android.widget.Toast
  * bekommt ein eigenes App-Passwort. Abmelden geht erst, wenn alles oben ist.
  */
 class AnmeldenActivity : Activity() {
+    companion object {
+        /** Eigener Erklaersatz oben (Standard: Hochladen in den persoenlichen Ordner). */
+        const val EXTRA_BESCHREIBUNG = "ch.rosenweg4303.cloud.BESCHREIBUNG"
+    }
+
     private lateinit var status: TextView
     private lateinit var warteschlange: TextView
     private lateinit var knopf: Button
@@ -52,9 +57,11 @@ class AnmeldenActivity : Activity() {
             gravity = Gravity.TOP
             setPadding(rand, rand, rand, rand)
             addView(TextView(context).apply {
-                text = "Dateien dieser App werden in deinen persönlichen Ordner der " +
-                    "Rosenweg-Nextcloud hochgeladen (${Hochladen.PERSOENLICH}). Auf dem " +
-                    "Telefon bleibt nur, was noch nicht oben ist."
+                // Kalender, Kontakte, Dokumente erklaeren selbst, was sie mit der Nextcloud tun
+                text = intent?.getStringExtra(EXTRA_BESCHREIBUNG)
+                    ?: ("Dateien dieser App werden in deinen persönlichen Ordner der " +
+                        "Rosenweg-Nextcloud hochgeladen (${Hochladen.PERSOENLICH}). Auf dem " +
+                        "Telefon bleibt nur, was noch nicht oben ist.")
                 setPadding(0, 0, 0, dp(24))
             })
             addView(status)
@@ -71,8 +78,19 @@ class AnmeldenActivity : Activity() {
             fertig()
             return
         }
+        // zurueck vom gemeinsamen Anmeldeschirm: angemeldet -> Nextcloud-Zugang holen
+        if (wartetAufSchirm) {
+            wartetAufSchirm = false
+            if (RosenwegAnmeldung.angemeldet(this) && KontoSpeicher(this).laden() == null) {
+                anmelden()
+                return
+            }
+        }
         anzeigen()
     }
+
+    /** Anmeldeschirm (Karte oder Rosenweg-Konto) ist offen. */
+    private var wartetAufSchirm = false
 
     override fun onPause() {
         sichtbar = false
@@ -120,7 +138,53 @@ class AnmeldenActivity : Activity() {
         }
     }
 
+    /**
+     * Eigenes Handy (Stefan 26.11.2026): erst in der App anmelden - gemeinsamer Anmeldeschirm aus
+     * diesem Modul (Rosenweg-Karte oder Rosenweg-Konto, wie der Sperrbildschirm der geteilten
+     * Telefone) -, dann holt [NextcloudZugang] das App-Passwort von der Anlage. Geht das nicht
+     * (Anlage ohne den Weg, kein Nextcloud-Konto zur E-Mail), bleibt die Anmeldung direkt bei der
+     * Nextcloud im Browser (Login-Flow).
+     */
     private fun anmelden() {
+        if (!RosenwegAnmeldung.geraetDa(this) && !RosenwegAnmeldung.angemeldet(this)) {
+            wartetAufSchirm = true
+            startActivity(Intent(this, RosenwegAnmeldeSchirm::class.java)
+                .putExtra(RosenwegAnmeldeSchirm.EXTRA_ZURUECK_SCHLIESST_APP, false))
+            return
+        }
+        if (!RosenwegAnmeldung.geraetDa(this)) {
+            status.text = "Nextcloud-Zugang wird geholt …"
+            knopf.isEnabled = false
+            Thread {
+                try {
+                    val konto = NextcloudZugang.holen(this, appName())
+                    angemeldetMit(konto)
+                } catch (e: Exception) {
+                    val text = if (e is NextcloudZugang.Fehler) e.message else "Keine Verbindung zum Rosenweg"
+                    runOnUiThread {
+                        Toast.makeText(this, "$text – Anmeldung direkt bei der Nextcloud", Toast.LENGTH_LONG).show()
+                        loginFlow()
+                    }
+                }
+            }.start()
+            return
+        }
+        loginFlow()
+    }
+
+    /** Konto speichern und wie nach dem Login-Flow weiter (aus einem Hintergrund-Thread). */
+    private fun angemeldetMit(konto: Konto) {
+        KontoSpeicher(this).speichern(konto)
+        Hochladen.anstossen(this)
+        Einstellungen.abgleichen(this)
+        runOnUiThread {
+            geradeAngemeldet = true
+            if (sichtbar) fertig() else anzeigen()
+        }
+    }
+
+    /** Anmeldung direkt bei der Nextcloud im Browser (Login-Flow v2). */
+    private fun loginFlow() {
         val flow = LoginFlow(appName())
         login = flow
         anzeigen()
