@@ -32,6 +32,7 @@ android {
     }
     sourceSets {
         getByName("main").java.directories.add("src/main/kotlin")
+        getByName("test").java.directories.add("src/test/kotlin")
     }
 }
 
@@ -53,4 +54,6 @@ dependencies {
     api(project(":anmeldeschirm"))
     api(libs.okhttp)
     implementation(libs.androidx.work)
+    // vCard/iCalendar (dav/Formate.kt) ohne Android pruefen
+    testImplementation("junit:junit:4.13.2")
 }

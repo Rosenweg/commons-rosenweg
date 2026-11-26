@@ -24,6 +24,11 @@ import android.widget.Toast
  * bekommt ein eigenes App-Passwort. Abmelden geht erst, wenn alles oben ist.
  */
 class AnmeldenActivity : Activity() {
+    companion object {
+        /** Eigener Erklaersatz oben (Standard: Hochladen in den persoenlichen Ordner). */
+        const val EXTRA_BESCHREIBUNG = "ch.rosenweg4303.cloud.BESCHREIBUNG"
+    }
+
     private lateinit var status: TextView
     private lateinit var warteschlange: TextView
     private lateinit var knopf: Button
@@ -52,9 +57,11 @@ class AnmeldenActivity : Activity() {
             gravity = Gravity.TOP
             setPadding(rand, rand, rand, rand)
             addView(TextView(context).apply {
-                text = "Dateien dieser App werden in deinen persönlichen Ordner der " +
-                    "Rosenweg-Nextcloud hochgeladen (${Hochladen.PERSOENLICH}). Auf dem " +
-                    "Telefon bleibt nur, was noch nicht oben ist."
+                // Kalender, Kontakte, Dokumente erklaeren selbst, was sie mit der Nextcloud tun
+                text = intent?.getStringExtra(EXTRA_BESCHREIBUNG)
+                    ?: ("Dateien dieser App werden in deinen persönlichen Ordner der " +
+                        "Rosenweg-Nextcloud hochgeladen (${Hochladen.PERSOENLICH}). Auf dem " +
+                        "Telefon bleibt nur, was noch nicht oben ist.")
                 setPadding(0, 0, 0, dp(24))
             })
             addView(status)
