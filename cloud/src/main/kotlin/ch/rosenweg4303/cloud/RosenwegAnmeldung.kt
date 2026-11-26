@@ -76,6 +76,9 @@ object RosenwegAnmeldung {
     /** Mit der Karte angemeldet (statt im Browser)? */
     fun mitKarte(c: Context) = prefs(c).getString("rt", null) == null && KartenSitzung.angemeldet(c)
 
+    /** Zeitpunkt der letzten Browser-Anmeldung (ms), 0 = keine. Fuer "bestaetigen" in Flutter-Apps. */
+    fun angemeldetUm(c: Context): Long = prefs(c).getLong("angemeldet_um", 0)
+
     fun name(c: Context): String? = prefs(c).getString("name", null) ?: KartenSitzung.name(c)
     fun email(c: Context): String? = prefs(c).getString("email", null) ?: KartenSitzung.email(c)
 
@@ -86,8 +89,13 @@ object RosenwegAnmeldung {
 
     private fun enc(s: String) = Uri.encode(s)
 
-    /** Anmeldeseite im Browser oeffnen. */
-    fun starten(a: Activity) {
+    /**
+     * Anmeldeseite im Browser oeffnen. [bestaetigen]: Authentik fragt erneut nach dem Ausweis
+     * (prompt=login, max_age=0), fuer heikle Aktionen (API: 403 reauth).
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun starten(a: Activity, bestaetigen: Boolean = false) {
         val verifier = zufall(48)
         val state = zufall(24)
         prefs(a).edit().putString("verifier", verifier).putString("state", state).commit()
@@ -97,7 +105,8 @@ object RosenwegAnmeldung {
         )
         val url = "$AUTHENTIK/authorize/?response_type=code&client_id=$CLIENT_ID" +
             "&redirect_uri=${enc(rueckSprung(a))}&scope=${enc(SCOPES)}" +
-            "&state=$state&code_challenge=$challenge&code_challenge_method=S256"
+            "&state=$state&code_challenge=$challenge&code_challenge_method=S256" +
+            (if (bestaetigen) "&prompt=login&max_age=0" else "")
         a.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
@@ -117,6 +126,7 @@ object RosenwegAnmeldung {
                 .add("redirect_uri", rueckSprung(c)).add("client_id", CLIENT_ID).add("code_verifier", verifier).build()
         ) ?: throw Fehler("Rosenweg-Anmeldung fehlgeschlagen")
         uebernehmen(c, j)
+        p.edit().putLong("angemeldet_um", System.currentTimeMillis()).apply()
         KartenSitzung.abmelden(c)   // Browser-Anmeldung ersetzt eine Karten-Sitzung dieser App
         // Name und E-Mail fuer die Anzeige
         try {

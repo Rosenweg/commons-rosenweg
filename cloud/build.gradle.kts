@@ -49,6 +49,8 @@ publishing.publications {
 dependencies {
     // Rosenweg Updater: jede Cloud-App kann ohne Geraet alle Rosenweg-Apps aktualisieren
     api(project(":updater"))
+    // Aussehen, Texte und Kartenleser des Anmeldeschirms (auch Rosenweg Geraet)
+    api(project(":anmeldeschirm"))
     api(libs.okhttp)
     implementation(libs.androidx.work)
 }
