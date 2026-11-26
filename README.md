@@ -26,6 +26,8 @@ override fun onResume() {
 }
 ```
 
+Apps mit der Rosenweg-Nextcloud rufen `RosenwegAnmeldeSchirm.zeigenFallsNoetig(this, nextcloud = true)` auf (ab Cloud 0.10.0). Dann holt der Schirm nach der Anmeldung gleich den Nextcloud-Zugang von der Anlage (Schritt „Nextcloud verbinden“, `NextcloudZugang.holenUndSpeichern`). Ist die App schon angemeldet, fehlt aber der Zugang, wird er im Hintergrund nachgeholt. Niemand muss danach noch „Anmelden“ in den Einstellungen antippen. Geht die Anlage nicht, bleibt „Rosenweg-Nextcloud“ in den Einstellungen als Weg von Hand. Auf dem eigenen Handy meldet „Abmelden“ dort auch die App ab.
+
 `RosenwegAnmeldung.angemeldet`, `name`, `zugangsToken`, `zugangUngueltig` und `abmelden` decken beide Wege ab. Server: Website `api/routes/app-karte.js`.
 
 ## Verwendung

@@ -23,6 +23,44 @@ object NextcloudZugang {
 
     class Fehler(meldung: String, val status: Int) : Exception(meldung)
 
+    @Volatile private var nachgeholt = false
+
+    /** Name des App-Passworts in der Nextcloud, z.B. "Rosenweg Galerie (Android)". */
+    fun appName(c: Context) = "${c.applicationInfo.loadLabel(c.packageManager)} (Android)"
+
+    /**
+     * Blockierend: Zugang holen und wie nach dem Login-Flow weiter (speichern, Hochladen und
+     * Einstellungen anstossen). Wirft wie [holen].
+     */
+    fun holenUndSpeichern(c: Context, appName: String = appName(c)): Konto {
+        val ctx = c.applicationContext
+        val konto = holen(ctx, appName)
+        KontoSpeicher(ctx).speichern(konto)
+        Hochladen.anstossen(ctx)
+        Einstellungen.abgleichen(ctx)
+        return konto
+    }
+
+    /**
+     * Eigenes Handy, in der App angemeldet, aber (noch) kein Nextcloud-Zugang - z.B. mit einer
+     * aelteren Version angemeldet oder das App-Passwort wurde ungueltig: im Hintergrund holen,
+     * hoechstens einmal pro Prozess. Fehler bleiben still ("Rosenweg-Nextcloud" in den Einstellungen
+     * geht weiterhin von Hand).
+     */
+    fun nachholenFallsNoetig(c: Context) {
+        val ctx = c.applicationContext
+        if (nachgeholt || RosenwegAnmeldung.geraetDa(ctx) || !RosenwegAnmeldung.angemeldet(ctx)) return
+        if (KontoSpeicher(ctx).laden() != null) return
+        nachgeholt = true
+        Thread {
+            try {
+                holenUndSpeichern(ctx)
+            } catch (e: Exception) {
+                android.util.Log.w("NextcloudZugang", "nachholen: ${e.javaClass.simpleName}")
+            }
+        }.start()
+    }
+
     /** Blockierend. Wirft [Fehler] (Text fuer die Person) oder IOException (Netz). */
     fun holen(c: Context, appName: String): Konto {
         val token = RosenwegAnmeldung.zugangsToken(c) ?: throw Fehler("Bitte zuerst anmelden", 401)
