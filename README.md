@@ -8,6 +8,25 @@ Gemeinsame Bibliothek der Rosenweg-Apps für die Smartphones der Siedlung Rosenw
 - **`cloud`** (`ch.rosenweg4303:cloud`): Zugang zur Rosenweg-Nextcloud über WebDAV. Anmeldung per Nextcloud-Login (App-Passwort) oder mit dem Rosenweg-Konto (öffentlicher Client, PKCE; das Refresh-Token liegt verschlüsselt im Android-Keystore). Auf geteilten Telefonen hat der Zugang von Rosenweg Gerät Vorrang. Dazu: Upload-Warteschlange (lokal gelöscht wird erst nach Bestätigung), Hinweis beim ersten Start, Auflisten und Streamen der eigenen Dateien und Einstellungen pro Person in `Persönlich/.rosenweg/`. Bindet `updater` ein.
 - **`updater`** (`ch.rosenweg4303:updater`): Rosenweg Updater. Auf Handys ohne Rosenweg Gerät prüft genau eine installierte Rosenweg-App den App-Katalog der Telefonanlage und aktualisiert alle installierten Rosenweg-Apps. Jede APK wird vor der Installation geprüft (Grösse, SHA-256, Paketname, Version, Signatur gleich der eigenen); Android lässt jede Installation bestätigen.
 
+## Anmeldeschirm (privates Handy)
+
+Auf Handys ohne Rosenweg Gerät zeigt jede Rosenweg-App mit Anmeldung den gemeinsamen Anmeldeschirm `ch.rosenweg4303.cloud.RosenwegAnmeldeSchirm`. Er sieht aus wie der Sperrbildschirm der geteilten Telefone. Man meldet sich dort auf einem von zwei Wegen an:
+
+- **Rosenweg-Karte hinten ans Telefon halten.** Die Karte allein meldet an, ohne PIN. Die App erhält dann eine eigene Karten-Sitzung, die an das Gerät gebunden ist (Schlüssel im Android-Keystore, siehe `KartenSitzung`).
+- **„Mit Rosenweg-Konto anmelden“** im Browser.
+
+Jede App meldet sich selbst an, und Abmelden betrifft nur diese App. So bindet eine App den Schirm ein:
+
+```kotlin
+override fun onResume() {
+    super.onResume()
+    if (RosenwegAnmeldeSchirm.zeigenFallsNoetig(this)) return   // Java: RosenwegAnmeldeSchirm.zeigenFallsNoetig(this)
+    // ab hier angemeldet: RosenwegAnmeldung.zugangsToken(this) gilt für beide Wege
+}
+```
+
+`RosenwegAnmeldung.angemeldet`, `name`, `zugangsToken`, `zugangUngueltig` und `abmelden` decken beide Wege ab. Server: Website `api/routes/app-karte.js`.
+
 ## Verwendung
 
 Die Rosenweg-Apps holen die Bibliothek aus dem lokalen Maven-Repository (`mavenLocal()`):

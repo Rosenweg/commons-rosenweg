@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- WorkManager wartet auf Netz -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Anmeldeschirm: Rosenweg-Karte (UniFi Access) lesen; Handys ohne NFC bleiben erlaubt -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
     <!-- Zugang der am geteilten Telefon angemeldeten Person von Rosenweg Gerät (nur Rosenweg-Signatur) -->
     <uses-permission android:name="ch.rosenweg4303.permission.ANLAGE" />
@@ -32,6 +35,15 @@
                 <data android:scheme="${applicationId}" android:path="/anmeldung" />
             </intent-filter>
         </activity>
+        <!-- Gemeinsamer Anmeldeschirm (privates Handy): Karte oder Rosenweg-Konto, wie der
+             Sperrbildschirm der geteilten Telefone -->
+        <activity
+            android:name="ch.rosenweg4303.cloud.RosenwegAnmeldeSchirm"
+            android:exported="false"
+            android:label="Anmelden"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
         <activity
             android:name="ch.rosenweg4303.cloud.AnmeldenActivity"
             android:exported="false"
