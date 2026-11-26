@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("CLOUD_VERSION")?.toString() ?: "0.8.2"
+version = findProperty("CLOUD_VERSION")?.toString() ?: "0.9.0"
 
 android {
     namespace = "ch.rosenweg4303.cloud"
@@ -32,6 +32,7 @@ android {
     }
     sourceSets {
         getByName("main").java.directories.add("src/main/kotlin")
+        getByName("test").java.directories.add("src/test/kotlin")
     }
 }
 
@@ -49,6 +50,10 @@ publishing.publications {
 dependencies {
     // Rosenweg Updater: jede Cloud-App kann ohne Geraet alle Rosenweg-Apps aktualisieren
     api(project(":updater"))
+    // Aussehen, Texte und Kartenleser des Anmeldeschirms (auch Rosenweg Geraet)
+    api(project(":anmeldeschirm"))
     api(libs.okhttp)
     implementation(libs.androidx.work)
+    // vCard/iCalendar (dav/Formate.kt) ohne Android pruefen
+    testImplementation("junit:junit:4.13.2")
 }

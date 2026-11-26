@@ -34,6 +34,11 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Auf geteilten Telefonen (Rosenweg Geraet installiert) melden sich die Apps NICHT selbst an,
  * dort laeuft alles ueber Geraet und die Sitzung am Telefon.
+ *
+ * Zweiter Weg (Stefan 26.11.2026): Rosenweg-Karte ans Handy halten, auf dem gemeinsamen
+ * Anmeldeschirm [RosenwegAnmeldeSchirm] - dann gilt eine Karten-Sitzung ([KartenSitzung]).
+ * Fuer die App ist das gleich: [angemeldet], [zugangsToken], [abmelden] decken beide Wege ab.
+ * Jede App meldet sich selbst an; es gibt keine geraeteweite Anmeldung.
  */
 object RosenwegAnmeldung {
     private const val TAG = "RosenwegAnmeldung"
@@ -63,10 +68,19 @@ object RosenwegAnmeldung {
         false
     }
 
-    fun angemeldet(c: Context) = prefs(c).getString("rt", null) != null
+    fun angemeldet(c: Context) = prefs(c).getString("rt", null) != null || KartenSitzung.angemeldet(c)
 
-    fun name(c: Context): String? = prefs(c).getString("name", null)
-    fun email(c: Context): String? = prefs(c).getString("email", null)
+    /** Ohne Rosenweg Geraet und ohne Anmeldung: Anmeldeschirm zeigen ([RosenwegAnmeldeSchirm.noetig]). */
+    fun anmeldungNoetig(c: Context) = !geraetDa(c) && !angemeldet(c)
+
+    /** Mit der Karte angemeldet (statt im Browser)? */
+    fun mitKarte(c: Context) = prefs(c).getString("rt", null) == null && KartenSitzung.angemeldet(c)
+
+    /** Zeitpunkt der letzten Browser-Anmeldung (ms), 0 = keine. Fuer "bestaetigen" in Flutter-Apps. */
+    fun angemeldetUm(c: Context): Long = prefs(c).getLong("angemeldet_um", 0)
+
+    fun name(c: Context): String? = prefs(c).getString("name", null) ?: KartenSitzung.name(c)
+    fun email(c: Context): String? = prefs(c).getString("email", null) ?: KartenSitzung.email(c)
 
     private fun zufall(n: Int): String {
         val b = ByteArray(n).also { SecureRandom().nextBytes(it) }
@@ -75,8 +89,13 @@ object RosenwegAnmeldung {
 
     private fun enc(s: String) = Uri.encode(s)
 
-    /** Anmeldeseite im Browser oeffnen. */
-    fun starten(a: Activity) {
+    /**
+     * Anmeldeseite im Browser oeffnen. [bestaetigen]: Authentik fragt erneut nach dem Ausweis
+     * (prompt=login, max_age=0), fuer heikle Aktionen (API: 403 reauth).
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun starten(a: Activity, bestaetigen: Boolean = false) {
         val verifier = zufall(48)
         val state = zufall(24)
         prefs(a).edit().putString("verifier", verifier).putString("state", state).commit()
@@ -86,7 +105,8 @@ object RosenwegAnmeldung {
         )
         val url = "$AUTHENTIK/authorize/?response_type=code&client_id=$CLIENT_ID" +
             "&redirect_uri=${enc(rueckSprung(a))}&scope=${enc(SCOPES)}" +
-            "&state=$state&code_challenge=$challenge&code_challenge_method=S256"
+            "&state=$state&code_challenge=$challenge&code_challenge_method=S256" +
+            (if (bestaetigen) "&prompt=login&max_age=0" else "")
         a.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
@@ -106,6 +126,8 @@ object RosenwegAnmeldung {
                 .add("redirect_uri", rueckSprung(c)).add("client_id", CLIENT_ID).add("code_verifier", verifier).build()
         ) ?: throw Fehler("Rosenweg-Anmeldung fehlgeschlagen")
         uebernehmen(c, j)
+        p.edit().putLong("angemeldet_um", System.currentTimeMillis()).apply()
+        KartenSitzung.abmelden(c)   // Browser-Anmeldung ersetzt eine Karten-Sitzung dieser App
         // Name und E-Mail fuer die Anzeige
         try {
             http.newCall(Request.Builder().url("$AUTHENTIK/userinfo/").header("Authorization", "Bearer ${j.getString("access_token")}").build())
@@ -127,6 +149,7 @@ object RosenwegAnmeldung {
      */
     @Synchronized
     fun zugangsToken(c: Context): String? {
+        if (mitKarte(c)) return KartenSitzung.zugangsToken(c)
         val jetzt = System.currentTimeMillis()
         zugang?.let { if (jetzt < zugangBis - 60_000) return it }
         val rt = entschluesseln(c, prefs(c).getString("rt", null) ?: return null) ?: return null
@@ -143,11 +166,14 @@ object RosenwegAnmeldung {
     fun zugangUngueltig() {
         zugang = null
         zugangBis = 0
+        KartenSitzung.zugangUngueltig()
     }
 
+    /** Nur diese App abmelden (beide Wege). Darf im UI-Thread laufen. */
     fun abmelden(c: Context) {
         zugangUngueltig()
         prefs(c).edit().clear().commit()
+        KartenSitzung.abmelden(c)
     }
 
     /** null bei 400/401 (abgelaufen/widerrufen) - dann ist die Anmeldung weg. Wirft bei Netzfehlern. */
