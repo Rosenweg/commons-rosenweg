@@ -972,7 +972,6 @@
     <ID>MaxLineLength:Activity.kt$if</ID>
     <ID>MaxLineLength:Activity.kt$return</ID>
     <ID>MaxLineLength:Activity.kt$showPickSecondsDialog(seconds, isSnoozePicker, showSecondsAtCustomDialog, showDuringDayOption, cancelCallback, callback)</ID>
-    <ID>MaxLineLength:Activity.kt$val packageName = if (baseConfig.appId.contains(".debug", true)) "org.fossify.phone.debug" else "org.fossify.phone"</ID>
     <ID>MaxLineLength:ActivityExtensions.kt$"You are using a fake version of the app. For your own safety download the original one from www.fossify.org. Thanks"</ID>
     <ID>MaxLineLength:ActivityExtensions.kt$fun</ID>
     <ID>MaxLineLength:AlertDialog.kt$// in dialogs, lets use findViewById, because while some dialogs use MyEditText, material theme dialogs use TextInputEditText so the system takes care of it</ID>
@@ -1091,7 +1090,6 @@
     <ID>MaxLineLength:Context.kt$val Context.areSystemAnimationsEnabled: Boolean get() = Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f) &gt; 0f</ID>
     <ID>MaxLineLength:Context.kt$val Context.notificationManager: NotificationManager get() = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager</ID>
     <ID>MaxLineLength:Context.kt$val dayBits = arrayListOf(MONDAY_BIT, TUESDAY_BIT, WEDNESDAY_BIT, THURSDAY_BIT, FRIDAY_BIT, SATURDAY_BIT, SUNDAY_BIT)</ID>
-    <ID>MaxLineLength:Context.kt$}</ID>
     <ID>MaxLineLength:ContributorsActivity.kt$ContributorsActivity$LanguageContributor(R.drawable.ic_flag_azerbaijani_vector, R.string.translation_azerbaijani, R.string.translators_azerbaijani)</ID>
     <ID>MaxLineLength:ContributorsActivity.kt$ContributorsActivity$LanguageContributor(R.drawable.ic_flag_bengali_vector, R.string.translation_bengali, R.string.translators_bengali)</ID>
     <ID>MaxLineLength:ContributorsActivity.kt$ContributorsActivity$LanguageContributor(R.drawable.ic_flag_catalan_vector, R.string.translation_catalan, R.string.translators_catalan)</ID>
@@ -1430,6 +1428,7 @@
     <ID>TooManyFunctions:String.kt$org.fossify.commons.extensions.String.kt</ID>
     <ID>TooManyFunctions:View.kt$org.fossify.commons.extensions.View.kt</ID>
     <ID>TopLevelPropertyNaming:ChangeDateTimeFormatDialog.kt$private const val timeSample = 1676419200000 // February 15, 2023</ID>
+    <ID>UnusedParameter:AboutScreen.kt$onEmailClick: () -&gt; Unit</ID>
     <ID>UnusedParameter:MyAppCompatCheckbox.kt$MyAppCompatCheckbox$backgroundColor: Int</ID>
     <ID>UnusedParameter:MyAppCompatSpinner.kt$MyAppCompatSpinner$accentColor: Int</ID>
     <ID>UnusedParameter:MyAutoCompleteTextView.kt$MyAutoCompleteTextView$backgroundColor: Int</ID>
@@ -1446,6 +1445,16 @@
     <ID>UnusedParameter:MyTextView.kt$MyTextView$backgroundColor: Int</ID>
     <ID>UnusedParameter:SimpleColumnScaffold.kt$goBack: () -&gt; Unit</ID>
     <ID>UnusedParameter:WritePermissionDialog.kt$@PreviewParameter(WritePermissionDialogModePreviewParameter::class) mode: WritePermissionDialog.WritePermissionDialogMode</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$@Composable private fun getOnEmailClickAlertDialogState()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$@Composable private fun showGithubRelations()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun launchIssueTracker()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onContributorsClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onDonateClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onGithubClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onInviteClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onRateThisAppClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onRedditClick()</ID>
+    <ID>UnusedPrivateMember:AboutActivity.kt$AboutActivity$private fun onTelegramClick()</ID>
     <ID>UnusedPrivateMember:AboutScreen.kt$@MyDevices @Composable private fun AboutScreenPreview()</ID>
     <ID>UnusedPrivateMember:ActionMenu.kt$@MyDevices @Composable private fun ActionMenuPreview()</ID>
     <ID>UnusedPrivateMember:AddBlockedNumberDialog.kt$@Composable @MyDevices private fun AddOrEditBlockedNumberAlertDialogPreview()</ID>
@@ -1489,6 +1498,7 @@
     <ID>UnusedPrivateMember:SimpleScaffoldTopBar.kt$@Composable @MyDevices private fun SimpleScaffoldTopBarPreview()</ID>
     <ID>UnusedPrivateMember:WhatsNewDialog.kt$@MyDevices @Composable private fun WhatsNewAlertDialogPreview()</ID>
     <ID>UnusedPrivateMember:WritePermissionDialog.kt$@Composable @MyDevices private fun WritePermissionAlertDialogPreview(@PreviewParameter(WritePermissionDialogModePreviewParameter::class) mode: WritePermissionDialog.WritePermissionDialogMode)</ID>
+    <ID>UnusedPrivateProperty:AboutActivity.kt$AboutActivity$val showGoogleRelations = remember { resources.getBoolean(R.bool.is_google_play_build) }</ID>
     <ID>UnusedPrivateProperty:CustomizationActivity.kt$CustomizationActivity.Companion$private const val THEME_SOLARIZED = 2</ID>
     <ID>UnusedPrivateProperty:String.kt$i</ID>
     <ID>UnusedPrivateProperty:Theme.kt$val configuration = LocalConfiguration.current</ID>
