@@ -307,7 +307,9 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
         } catch (e: Exception) {
             null
         }
-        return KontakteAbbildung.vonAndroid(uid, zeilen, gruppenIds.mapNotNull { titel[it] }, foto)
+        val favorit = cr.query(ContentUris.withAppendedId(RawContacts.CONTENT_URI, rawId), arrayOf(RawContacts.STARRED), null, null, null)
+            ?.use { it.moveToFirst() && it.getInt(0) == 1 } ?: false
+        return KontakteAbbildung.vonAndroid(uid, zeilen, gruppenIds.mapNotNull { titel[it] }, foto).copy(favorit = favorit)
     }
 
     // ─── herunter ───────────────────────────────────────────────────────────
@@ -385,6 +387,7 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
             put(RawContacts.SYNC2, k.uid)
             put(RawContacts.SYNC3, b.url)
             put(RawContacts.RAW_CONTACT_IS_READ_ONLY, if (b.nurLesen) 1 else 0)
+            put(RawContacts.STARRED, if (k.favorit) 1 else 0)
             put(RawContacts.DIRTY, 0)
         }
         val rueck: Int?

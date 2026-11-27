@@ -83,6 +83,16 @@ class VCardVollTest {
     }
 
     @Test
+    fun favorit() {
+        val k = VKontakt("u", "Erika", favorit = true)
+        val t = VCard.schreiben(k)
+        assertTrue(t.contains("X-ROSENWEG-FAVORIT:1"))
+        assertTrue(VCard.lesen(t)!!.favorit)
+        assertFalse(VCard.lesen(VCard.schreiben(k.copy(favorit = false)))!!.favorit)
+        assertTrue(VCard.lesen(t)!!.unbekannt.none { it.startsWith("X-ROSENWEG-FAVORIT") })
+    }
+
+    @Test
     fun standardAdressbuch() {
         val h = "https://nextcloud.rosenweg4303.ch/remote.php/dav/addressbooks/users/stefan.mueller/"
         fun b(n: String, nurLesen: Boolean = false) = NextcloudDav.Sammlung(h + n + "/", n, "", null, nurLesen)

@@ -55,11 +55,13 @@ data class VKontakt(
     val foto: String? = null,
     val unbekannt: List<String> = emptyList(),
     val istGruppe: Boolean = false,
+    /** Favorit (Android "starred"). Die Nextcloud kennt keinen Favoriten - wir schreiben X-ROSENWEG-FAVORIT:1. */
+    val favorit: Boolean = false,
 )
 
 object VCard {
     /** Eigenschaften, die wir selbst schreiben; alles andere geht unveraendert zurueck. */
-    private val BEKANNT = setOf("BEGIN", "END", "VERSION", "UID", "FN", "N", "NICKNAME", "ORG", "TITLE", "TEL", "EMAIL",
+    private val BEKANNT = setOf("X-ROSENWEG-FAVORIT", "BEGIN", "END", "VERSION", "UID", "FN", "N", "NICKNAME", "ORG", "TITLE", "TEL", "EMAIL",
         "ADR", "URL", "BDAY", "ANNIVERSARY", "X-ANNIVERSARY", "NOTE", "CATEGORIES", "PHOTO", "PRODID", "REV", "LABEL")
 
     fun lesen(text: String): VKontakt? {
@@ -67,6 +69,7 @@ object VCard {
         var uid = ""; var fn = ""; var vor = ""; var nach = ""; var zweit = ""; var prae = ""; var suff = ""
         var org = ""; var abt = ""; var titel = ""; var notiz = ""; var spitz = ""
         var bday: String? = null; var jahrestag: String? = null; var foto: String? = null; var gruppe = false
+        var favorit = false
         val tel = mutableListOf<VEintrag>()
         val mail = mutableListOf<VEintrag>()
         val web = mutableListOf<VEintrag>()
@@ -101,6 +104,7 @@ object VCard {
             "ANNIVERSARY", "X-ANNIVERSARY" -> jahrestag = datum(l) ?: run { unbekannt.add(l.roh); null }
             "CATEGORIES" -> kat.addAll(Zeilen.teilen(l.wert, ',').map { it.trim() }.filter { it.isNotEmpty() })
             "PHOTO" -> foto = foto(l) ?: run { unbekannt.add(l.roh); null }
+            "X-ROSENWEG-FAVORIT" -> favorit = l.wert.trim().let { it == "1" || it.equals("true", true) }
             "KIND", "X-ADDRESSBOOKSERVER-KIND" -> { if (l.wert.trim().equals("group", true)) gruppe = true; unbekannt.add(l.roh) }
             else -> if (l.name !in BEKANNT && l.name != "X-ABLABEL") unbekannt.add(l.roh)
         }
@@ -109,7 +113,7 @@ object VCard {
         if (fn.isEmpty()) fn = listOf(vor, nach).filter { it.isNotBlank() }.joinToString(" ").ifEmpty { org }
         if (fn.isEmpty() && tel.isEmpty() && mail.isEmpty() && !gruppe) return null
         return VKontakt(uid, fn, vor, nach, org, tel, mail, notiz, zweit, prae, suff, spitz, abt, titel, adr, web,
-            bday, jahrestag, kat.distinct(), foto, unbekannt, gruppe)
+            bday, jahrestag, kat.distinct(), foto, unbekannt, gruppe, favorit)
     }
 
     private fun bereinigeLabel(s: String) = s.removePrefix("_\$!<").removeSuffix(">!\$_")
@@ -181,6 +185,7 @@ object VCard {
         if (k.notiz.isNotEmpty()) z.add("NOTE:${m(k.notiz)}")
         if (k.kategorien.isNotEmpty()) z.add("CATEGORIES:" + k.kategorien.joinToString(",") { m(it) })
         k.foto?.let { z.add("PHOTO;ENCODING=b;TYPE=${fotoTyp(it)}:$it") }
+        if (k.favorit) z.add("X-ROSENWEG-FAVORIT:1")
         z.addAll(k.unbekannt)
         z.add("REV:" + NextcloudDav.utc(System.currentTimeMillis()))
         z.add("END:VCARD")
