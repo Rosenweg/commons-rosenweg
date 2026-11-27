@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Gruppe der App = Farbe des Anmeldeschirms, wie der Grund ihres Logos (rosenweg-basis
+      werkzeug/logo/baukasten.py -\-gruppe). Die App setzt in res/values/ z.B.
+          <string name="rosenweg_gruppe" translatable="false">bewohner</string>
+      bewohner = Rosenweg-Rot, verwaltung = Blau, technik = Dunkelgruen.
+      Leer (hier, Standard) = Blau wie bisher; so bleibt der Sperrbildschirm von Rosenweg Geraet blau.
+    -->
+    <string name="rosenweg_gruppe" translatable="false"></string>
+</resources>

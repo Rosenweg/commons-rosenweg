@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("ANMELDESCHIRM_VERSION")?.toString() ?: "0.2.0"
+version = findProperty("ANMELDESCHIRM_VERSION")?.toString() ?: "0.2.1"
 
 android {
     namespace = "ch.rosenweg4303.anmeldeschirm"
