@@ -1,0 +1,85 @@
+# Neue Fassungen der Rosenweg-Pakete automatisch als PR in alle Repos, die sie nutzen.
+#
+# Nach jedem erfolgreichen "Pakete (GitHub Packages)" (Tag v*): welche Module haben eine neue
+# Fassung? cloud, updater, anmeldeschirm, wenn ihre Version in <modul>/build.gradle.kts gegenueber
+# dem vorigen Tag v* gestiegen ist; commons (org.fossify:commons = Tag ohne "v"), wenn sich unter
+# commons/ etwas geaendert hat. Fuer diese oeffnet abhaengige.yml in jedem Repo, das sie nutzt,
+# einen PR ("cloud 0.13.5, updater 0.1.5"): Version in build.gradle[.kts] / libs.versions.toml
+# ersetzen, Patch-Version der App hoch. Die Fassungen bleiben fest eingetragen.
+#
+# Von Hand: gh workflow run abhaengige-anheben.yml -f module="cloud=0.13.4 updater=0.1.4" [-f trocken=true]
+name: Abhängige anheben
+
+on:
+  workflow_run:
+    workflows: ["Pakete (GitHub Packages)"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Module und Fassungen, z.B. 'cloud=0.13.4 updater=0.1.4' (commons=7.1.3-rosenweg.7)"
+        required: true
+      trocken:
+        description: "nur anzeigen, keine PRs"
+        type: boolean
+        default: false
+      nur:
+        description: "nur diese Repos (Komma), leer = alle gefundenen"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  neu:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    runs-on: ubuntu-latest
+    outputs:
+      module: ${{ steps.neu.outputs.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ github.event_name == 'workflow_run' }}
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Neue Fassungen bestimmen
+        id: neu
+        env:
+          VON_HAND: ${{ inputs.module }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "module=$VON_HAND" >> "$GITHUB_OUTPUT"; echo "von Hand: $VON_HAND"; exit 0
+          fi
+          case "$TAG" in v*) ;; *) echo "kein Tag v* ($TAG) - nichts zu tun"; exit 0 ;; esac
+          vor=$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)
+          echo "Tag $TAG, voriger Tag ${vor:-keiner}"
+          fassung() { # <modul> <stand> -> Version aus <modul>/build.gradle.kts (Standardwert)
+            git show "$2:$1/build.gradle.kts" 2>/dev/null \
+              | sed -nE 's/^version = findProperty\("[A-Z_]+"\)\?\.toString\(\) \?: "([^"]+)".*/\1/p' | head -1
+          }
+          module=""
+          for m in cloud updater anmeldeschirm; do
+            neu=$(fassung "$m" HEAD); alt=""
+            [ -n "$vor" ] && alt=$(fassung "$m" "$vor")
+            if [ -n "$neu" ] && [ "$neu" != "$alt" ]; then module="$module $m=$neu"; fi
+          done
+          if [ -n "$vor" ] && ! git diff --quiet "$vor" HEAD -- commons; then module="$module commons=${TAG#v}"; fi
+          module="${module# }"
+          echo "Neu: ${module:-nichts}"
+          echo "module=$module" >> "$GITHUB_OUTPUT"
+
+  anheben:
+    needs: neu
+    if: ${{ needs.neu.outputs.module != '' }}
+    uses: ./.github/workflows/abhaengige.yml
+    with:
+      art: maven
+      argumente: ${{ needs.neu.outputs.module }}
+      quelle: commons-rosenweg
+      trocken: ${{ github.event_name == 'workflow_dispatch' && inputs.trocken }}
+      nur: ${{ inputs.nur || '' }}
+      werkzeug-ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+    secrets: inherit

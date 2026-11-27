@@ -1,0 +1,122 @@
+# Wiederverwendbar: abhaengige Repos der Organisation auf eine neue Fassung heben, je Repo ein PR
+# (Skript .github/abhaengige/anheben.py). Aufgerufen von
+#   - abhaengige-anheben.yml hier (nach "Pakete (GitHub Packages)": cloud, updater, anmeldeschirm,
+#     commons) und
+#   - rosenweg-basis .github/workflows/abhaengige.yml (Tag v*: Flutter-Apps, pubspec ref).
+# Die Liste der Repos wird gefunden (Git-Baum jedes Repos), nicht fest eingetragen.
+#
+# Zugang (Schreibrecht auf die anderen Repos; GITHUB_TOKEN reicht dafuer nicht und loest in den
+# PRs keine CI aus):
+#   bevorzugt GitHub-App "Rosenweg Abhaengige": Org-Variable ABHAENGIGE_CLIENT_ID und Org-Secret
+#   ABHAENGIGE_APP_KEY (privater Schluessel, PEM); sonst fein abgestuftes PAT als Org-Secret
+#   ABHAENGIGE_TOKEN. Beides fuer commons-rosenweg und rosenweg-basis freigeben. Siehe
+#   .github/abhaengige/README.md.
+name: Abhängige anheben (wiederverwendbar)
+
+on:
+  workflow_call:
+    inputs:
+      art:
+        description: "maven oder pub"
+        type: string
+        required: true
+      argumente:
+        description: "maven: 'cloud=0.13.5 updater=0.1.5'; pub: '<paket> <git-url> <tag>'"
+        type: string
+        required: true
+      quelle:
+        description: "Repo, aus dem die Fassung kommt (dort keine App-Version hochzaehlen)"
+        type: string
+        required: true
+      trocken:
+        description: "nur anzeigen, keine PRs"
+        type: boolean
+        default: false
+      nur:
+        description: "nur diese Repos (Komma), leer = alle gefundenen"
+        type: string
+        default: ""
+      runner:
+        description: 'runs-on als JSON, z.B. "ubuntu-latest" oder ["self-hosted","rosenweg"]'
+        type: string
+        default: '"ubuntu-latest"'
+      werkzeug-ref:
+        description: "Stand von commons-rosenweg, aus dem das Skript kommt"
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  anheben:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 60
+    env:
+      FLUTTER_VERSION: "3.47.5"
+      FLUTTER_SHA256: 2132e990f236f8d22e7c6314b29a191a95b10d7cbcfec9b4e2e303d996652cbb
+    steps:
+      - name: Skript holen
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Rosenweg/commons-rosenweg
+          ref: ${{ inputs.werkzeug-ref }}
+          path: werkzeug
+          sparse-checkout: .github/abhaengige
+          persist-credentials: false
+
+      - name: Zugang (GitHub-App)
+        id: app
+        if: ${{ vars.ABHAENGIGE_CLIENT_ID != '' }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.ABHAENGIGE_CLIENT_ID }}
+          private-key: ${{ secrets.ABHAENGIGE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Zugang pruefen
+        env:
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          PAT: ${{ secrets.ABHAENGIGE_TOKEN }}
+        run: |
+          if [ -n "$APP_TOKEN" ]; then t="$APP_TOKEN"; echo "Zugang: GitHub-App"
+          elif [ -n "$PAT" ]; then t="$PAT"; echo "Zugang: ABHAENGIGE_TOKEN (PAT)"
+          else
+            echo "::error::Kein Zugang: Org-Variable ABHAENGIGE_CLIENT_ID + Secret ABHAENGIGE_APP_KEY (GitHub-App) oder Secret ABHAENGIGE_TOKEN (PAT) fehlt - siehe commons-rosenweg .github/abhaengige/README.md"
+            exit 1
+          fi
+          echo "::add-mask::$t"
+          echo "GH_TOKEN=$t" >> "$GITHUB_ENV"
+
+      - name: Flutter (fest, mit Pruefsumme)
+        if: ${{ inputs.art == 'pub' }}
+        run: |
+          set -euo pipefail
+          C="$RUNNER_TEMP/flutter"; mkdir -p "$C"
+          curl -fsSL -o "$C/flutter.txz" "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+          echo "$FLUTTER_SHA256  $C/flutter.txz" | sha256sum -c -
+          tar -xJf "$C/flutter.txz" -C "$C" && rm "$C/flutter.txz"
+          git config --global --add safe.directory "$C/flutter"
+          echo "$C/flutter/bin" >> "$GITHUB_PATH"
+          "$C/flutter/bin/flutter" --version --suppress-analytics >/dev/null
+
+      - name: PRs oeffnen
+        env:
+          ART: ${{ inputs.art }}
+          ARGUMENTE: ${{ inputs.argumente }}
+          QUELLE: ${{ inputs.quelle }}
+          NUR: ${{ inputs.nur }}
+          TROCKEN: ${{ inputs.trocken }}
+          ABH_ORG: ${{ github.repository_owner }}
+          ABH_LAUF: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # git (clone/push, pub mit Git-Abhaengigkeiten aus privaten Repos) mit demselben Zugang
+          gh auth setup-git
+          extra=()
+          [ "$TROCKEN" = "true" ] && extra+=(--trocken)
+          [ -n "$NUR" ] && extra+=(--nur "$NUR")
+          # shellcheck disable=SC2086 # ARGUMENTE sind bewusst mehrere Woerter
+          python3 werkzeug/.github/abhaengige/anheben.py --quelle "$QUELLE" "${extra[@]}" "$ART" $ARGUMENTE
