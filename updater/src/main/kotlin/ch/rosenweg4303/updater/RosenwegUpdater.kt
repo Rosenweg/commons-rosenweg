@@ -69,7 +69,33 @@ object RosenwegUpdater {
         "ch.rosenweg4303.kiosk", "ch.rosenweg4303.vm", "ch.rosenweg4303.salz", "ch.rosenweg4303.profil",
         // Rosenweg Mein Telefon (Flutter)
         "ch.rosenweg4303.meintelefon",
+        // 0.1.8: Zutritt, Waschkueche, Reparatur (Flutter). Neue Apps muessen ab 0.1.8 nicht mehr
+        // hierher: der Updater findet jede Rosenweg-App ueber ROSENWEG_APP (siehe rosenwegApps).
+        "ch.rosenweg4303.zutritt", "ch.rosenweg4303.waschkueche", "ch.rosenweg4303.reparatur",
     )
+
+    /** Aktion, die jede App mit diesem Modul anbietet (RosenwegAppKennung, 0.1.8). */
+    const val AKTION_APP = "ch.rosenweg4303.ROSENWEG_APP"
+
+    /**
+     * Alle installierten Apps mit diesem Modul (ab 0.1.8), ohne Liste von Hand: sie bieten
+     * [AKTION_APP] an, und das Manifest fragt per <queries><intent> danach. Aeltere Apps ohne die
+     * Aktion sieht der Updater weiter ueber die <queries><package>-Liste und [ZUSTAENDIG].
+     */
+    fun rosenwegApps(c: Context): List<String> = try {
+        val l = if (Build.VERSION.SDK_INT >= 33) {
+            c.packageManager.queryBroadcastReceivers(Intent(AKTION_APP), PackageManager.ResolveInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION") c.packageManager.queryBroadcastReceivers(Intent(AKTION_APP), 0)
+        }
+        l.mapNotNull { it.activityInfo?.packageName }.filter { it.startsWith("ch.rosenweg4303.") }.distinct().sorted()
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    /** Reihenfolge der Zustaendigkeit: erst [ZUSTAENDIG] (feste Reihenfolge, auch fuer aeltere
+     * Apps), dann alle gefundenen weiteren alphabetisch. */
+    internal fun reihenfolge(c: Context): List<String> = ZUSTAENDIG + (rosenwegApps(c) - ZUSTAENDIG.toSet())
 
     internal val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
 
@@ -89,7 +115,7 @@ object RosenwegUpdater {
     /** Die zustaendige App ohne Blick auf Rosenweg Geraet: sie meldet den Versionsstand (0.1.6). */
     internal fun meldetStand(c: Context): Boolean {
         // nur Apps, die den Updater schon enthalten (alte Versionen ohne ihn pruefen nie)
-        val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) }
+        val erste = reihenfolge(c).firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) }
         // Eine App, die (noch) nicht in der Liste steht, prueft selbst, solange keine aus der Liste
         // installiert ist - sonst bliebe sie ohne Updates (so ging es Rosenweg Kiosk bis 0.1.3).
         if (erste == null) return c.packageName !in ZUSTAENDIG
@@ -255,7 +281,7 @@ object RosenwegUpdater {
     internal fun standMelden(c: Context, pakete: Set<String>?) {
         try {
             val eigen = eigeneSignatur(c)
-            val kandidaten = (pakete ?: emptySet()) + ZUSTAENDIG + c.packageName
+            val kandidaten = (pakete ?: emptySet()) + reihenfolge(c) + c.packageName
             val apps = kandidaten.mapNotNull { p ->
                 val i = info(c, p) ?: return@mapNotNull null
                 if (signaturen(i).intersect(eigen).isEmpty()) return@mapNotNull null
@@ -293,12 +319,36 @@ object RosenwegUpdater {
         }
     }
 
+    /** 0.1.8: "Rosenweg-Update wartet auf Bestaetigung" - fuehrt direkt zur offenen Bestaetigung
+     * (Befund A37: nach Home und Neustart der App war sie sonst nur ueber die Einstellungen zu finden). */
+    internal fun bestaetigungMelden(c: Context, name: String) {
+        val nm = c.getSystemService(NotificationManager::class.java) ?: return
+        nm.createNotificationChannel(NotificationChannel(KANAL, "Rosenweg-Updates", NotificationManager.IMPORTANCE_DEFAULT))
+        val pi = PendingIntent.getActivity(c, 1,
+            Intent(c, UpdateActivity::class.java).putExtra(UpdateActivity.EXTRA_FORTSETZEN, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = android.app.Notification.Builder(c, KANAL)
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentTitle("Rosenweg-Update wartet auf Bestätigung")
+            .setContentText("$name: zum Installieren tippen")
+            .setContentIntent(pi)
+            .setOngoing(true)
+            .setAutoCancel(true)
+            .build()
+        try { nm.notify(NOTIF_ID + 1, n) } catch (e: SecurityException) { Log.i(TAG, "Benachrichtigung nicht erlaubt") }
+    }
+
+    internal fun bestaetigungAbmelden(c: Context) {
+        c.getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID + 1)
+    }
+
     internal fun abmelden(c: Context) {
         c.getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
     }
 
     /** APK laden und pruefen (blockierend). Gibt die geprueften Datei zurueck oder wirft. */
-    internal fun laden(c: Context, u: Update): File {
+    internal fun laden(c: Context, u: Update, fortschritt: (Float) -> Unit = {}): File {
         val f = File(c.cacheDir, "rosenweg-update-${u.paket}.apk")
         http.newCall(Request.Builder().url(u.url).build()).execute().use { r ->
             if (!r.isSuccessful) throw UpdaterFehler("Die neue Fassung ist gerade nicht erhältlich (Fehler ${r.code}).")
@@ -311,6 +361,7 @@ object RosenwegUpdater {
                         val k = inp.read(b)
                         if (k < 0) break
                         md.update(b, 0, k); out.write(b, 0, k); n += k
+                        if (u.groesse > 0) fortschritt(n.toFloat() / u.groesse)
                     }
                 }
             }

@@ -28,6 +28,7 @@ class UpdaterStart : ContentProvider() {
     }
 
     private fun einplanen(c: android.content.Context) {
+        zurueckNachRecht(c)
         try {
             // 0.1.6 auch auf geteilten Telefonen: dort installiert Rosenweg Geraet, die Pruefung
             // meldet nur den Versionsstand ans NOC.
@@ -36,6 +37,30 @@ class UpdaterStart : ContentProvider() {
             android.util.Log.w(RosenwegUpdater.TAG, "Start: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
+    /**
+     * 0.1.8: Wurde "Apps aus dieser Quelle installieren" gerade erteilt (und dabei der Prozess beendet),
+     * oeffnet die erste sichtbare Activity der App wieder die Update-Seite, die dort weitermacht.
+     */
+    private fun zurueckNachRecht(c: android.content.Context) {
+        val app = c as? android.app.Application ?: return
+        app.registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
+            override fun onActivityResumed(a: android.app.Activity) {
+                if (a is UpdateActivity || !RechtMerker.wartet(a)) return
+                if (!a.packageManager.canRequestPackageInstalls()) return
+                val danach = RechtMerker.danachInstallieren(a)
+                RechtMerker.vergessen(a)
+                android.util.Log.i(RosenwegUpdater.TAG, "Recht erteilt: zurueck zur Update-Seite")
+                a.startActivity(android.content.Intent(a, UpdateActivity::class.java).putExtra(UpdateActivity.EXTRA_NACH_RECHT, danach))
+            }
+            override fun onActivityCreated(a: android.app.Activity, b: android.os.Bundle?) = Unit
+            override fun onActivityStarted(a: android.app.Activity) = Unit
+            override fun onActivityPaused(a: android.app.Activity) = Unit
+            override fun onActivityStopped(a: android.app.Activity) = Unit
+            override fun onActivitySaveInstanceState(a: android.app.Activity, b: android.os.Bundle) = Unit
+            override fun onActivityDestroyed(a: android.app.Activity) = Unit
+        })
+    }
+
     override fun query(u: Uri, p: Array<out String>?, s: String?, a: Array<out String>?, o: String?): Cursor? = null
     override fun getType(u: Uri): String? = null
     override fun insert(u: Uri, v: ContentValues?): Uri? = null

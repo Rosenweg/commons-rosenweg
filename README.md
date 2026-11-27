@@ -110,7 +110,7 @@ Auf Handys ohne Rosenweg Gerät prüft genau eine installierte Rosenweg-App den 
 
 Android lässt jede Installation bestätigen. Auf geteilten Telefonen übernimmt Rosenweg Gerät.
 
-Welche App prüft: die erste installierte aus `RosenwegUpdater.ZUSTAENDIG` (mit Updater und Rosenweg-Signatur). Neue Apps kommen **hinten** an die Liste und in die `<queries>` des Manifests (seit 0.1.4: Kiosk, Virtuelle Computer, Salz, Profil). Ist keine App der Liste installiert, prüft eine App ausserhalb der Liste selbst. Die Flutter-Apps bekommen den Updater auf Android über `rosenweg_basis`; auf den Computern hat `rosenweg_basis` einen eigenen (Linux, macOS, Windows).
+Welche App prüft: die erste installierte aus `RosenwegUpdater.ZUSTAENDIG` (mit Updater und Rosenweg-Signatur). Seit 0.1.8 findet der Updater jede App mit dem Modul selbst (Empfänger `RosenwegAppKennung` mit der Aktion `ch.rosenweg4303.ROSENWEG_APP`, im Manifest per `<queries><intent>`); neue Apps müssen in keine Liste mehr. `ZUSTAENDIG` bleibt die feste Reihenfolge (auch für ältere Apps), gefundene weitere Apps folgen alphabetisch. Ist keine App der Liste installiert, prüft eine App ausserhalb der Liste selbst. Die Flutter-Apps bekommen den Updater auf Android über `rosenweg_basis`; auf den Computern hat `rosenweg_basis` einen eigenen (Linux, macOS, Windows).
 
 Aus ist der Updater nur, wo andere aktualisieren: auf geteilten Telefonen (Rosenweg Gerät installiert aus dem Katalog) und – bei den Flutter-Apps – auf Rosenweg-Stationen (os-stationen).
 
