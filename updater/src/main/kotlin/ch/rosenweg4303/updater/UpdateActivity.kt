@@ -17,7 +17,8 @@ import java.io.File
 import java.lang.ref.WeakReference
 
 /**
- * Liste der Updates mit "Alle aktualisieren". Laedt und prueft eine APK nach der anderen und
+ * "Nach Updates suchen" ([RosenwegUpdater.jetztPruefen]) und Ziel der Meldung: prüft sofort und
+ * zeigt "Aktuell", "Neue Fassung X - Installieren" oder den Fehler im Klartext. Laedt und prueft eine APK nach der anderen und
  * uebergibt sie dem Android-Installer; Android fragt pro App nach. Die naechste kommt, wenn
  * InstallStatus das Ergebnis der vorigen meldet.
  */
@@ -33,7 +34,7 @@ class UpdateActivity : Activity() {
         val rand = dp(24)
         status = TextView(this).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f) }
         liste = TextView(this).apply { setPadding(0, dp(12), 0, dp(24)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f) }
-        knopf = Button(this).apply { text = "Alle aktualisieren"; isEnabled = false; setOnClickListener { starten() } }
+        knopf = Button(this).apply { text = "Installieren"; isEnabled = false; setOnClickListener { starten() } }
         setContentView(ScrollView(this).apply {
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
@@ -51,24 +52,61 @@ class UpdateActivity : Activity() {
         if (warteschlange.isNotEmpty() && packageManager.canRequestPackageInstalls() && !laeuft) naechste()
     }
 
+    /** Prüfen und das Ergebnis zeigen (auch für "Nach Updates suchen" aus den Einstellungen). */
     private fun laden() {
         status.text = "Suche Updates …"
+        liste.text = eigeneFassung()
+        knopf.isEnabled = false
+        knopf.text = "Bitte warten …"
+        knopf.setOnClickListener { starten() }
+        if (RosenwegUpdater.geraetDa(this)) {
+            status.text = "Auf diesem Telefon hält Rosenweg Gerät alle Rosenweg-Apps aktuell."
+            knopf.text = "Schliessen"; knopf.isEnabled = true; knopf.setOnClickListener { finish() }
+            Thread { RosenwegUpdater.standMelden(this, null) }.start()
+            return
+        }
         Thread {
-            val l = try { RosenwegUpdater.verfuegbar(this) } catch (e: Exception) { null }
-            runOnUiThread {
-                if (l == null) { status.text = "Rosenweg nicht erreichbar"; return@runOnUiThread }
-                updates = l
-                if (l.isEmpty()) {
-                    status.text = "Alle Rosenweg-Apps sind aktuell."
-                    RosenwegUpdater.abmelden(this)
-                    liste.text = ""; knopf.isEnabled = false
-                } else {
-                    status.text = if (l.size == 1) "1 Update" else "${l.size} Updates"
-                    liste.text = l.joinToString("\n") { "• ${it.name}  ${it.versionName}" }
-                    knopf.isEnabled = true
-                }
-            }
+            val ergebnis = try { Result.success(RosenwegUpdater.verfuegbar(this)) } catch (e: Exception) { Result.failure(e) }
+            runOnUiThread { zeigen(ergebnis) }
         }.start()
+    }
+
+    private fun zeigen(ergebnis: Result<List<RosenwegUpdater.Update>>) {
+        if (isFinishing) return
+        val l = ergebnis.getOrElse { e ->
+            status.text = RosenwegUpdater.klartext(e)
+            knopf.text = "Nochmals versuchen"; knopf.isEnabled = true; knopf.setOnClickListener { laden() }
+            return
+        }
+        updates = l
+        knopf.setOnClickListener { starten() }
+        when (l.size) {
+            0 -> {
+                status.text = "Aktuell: alle Rosenweg-Apps auf diesem Handy sind auf dem neuesten Stand."
+                RosenwegUpdater.abmelden(this)
+                liste.text = eigeneFassung()
+                knopf.text = "Schliessen"; knopf.isEnabled = true; knopf.setOnClickListener { finish() }
+            }
+            1 -> {
+                val u = l[0]
+                status.text = "Neue Fassung ${u.versionName} für ${u.name}"
+                liste.text = "Installiert ist ${fassung(u.paket)}."
+                knopf.text = "Installieren"; knopf.isEnabled = true
+            }
+            else -> {
+                status.text = "${l.size} Rosenweg-Apps haben eine neue Fassung"
+                liste.text = l.joinToString("\n") { "• ${it.name}  ${fassung(it.paket)} → ${it.versionName}" }
+                knopf.text = "Alle installieren"; knopf.isEnabled = true
+            }
+        }
+    }
+
+    private fun fassung(paket: String): String =
+        RosenwegUpdater.info(this, paket)?.versionName ?: "?"
+
+    private fun eigeneFassung(): String {
+        val name = applicationInfo.loadLabel(packageManager)
+        return "$name ${fassung(packageName)}"
     }
 
     private fun starten() {
@@ -95,9 +133,9 @@ class UpdateActivity : Activity() {
                 installieren(f, u)
             } catch (e: Exception) {
                 runOnUiThread {
-                    status.text = "${u.name}: ${e.message ?: e.javaClass.simpleName}"
+                    status.text = "${u.name}: ${RosenwegUpdater.klartext(e)}"
                     warteschlange.removeAt(0); laeuft = false
-                    knopf.isEnabled = true
+                    knopf.text = "Nochmals versuchen"; knopf.isEnabled = true; knopf.setOnClickListener { laden() }
                 }
             }
         }.start()

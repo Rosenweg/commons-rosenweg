@@ -114,6 +114,14 @@ Welche App prüft: die erste installierte aus `RosenwegUpdater.ZUSTAENDIG` (mit 
 
 Aus ist der Updater nur, wo andere aktualisieren: auf geteilten Telefonen (Rosenweg Gerät installiert aus dem Katalog) und – bei den Flutter-Apps – auf Rosenweg-Stationen (os-stationen).
 
+Seit 0.1.6:
+
+| | |
+|---|---|
+| „Nach Updates suchen“ | `RosenwegUpdater.jetztPruefen(context)` – für den Knopf in den Einstellungen jeder App (bei „Abmelden“ bzw. im Konto-Menü). Prüft sofort und zeigt „Aktuell“, „Neue Fassung X – Installieren“ oder den Fehler im Klartext (`RosenwegUpdater.klartext`). Geht aus jeder App, nicht nur aus der zuständigen. Auf geteilten Telefonen: Hinweis „Rosenweg Gerät hält die Apps aktuell“. |
+| Meldung | eigene Nummer (`NOTIF_ID`, nicht mehr 4303 – die nimmt der Vordergrunddienst von Rosenweg Messages), Kanal `rosenweg_updates` |
+| Versionsstand ans NOC | Bei jeder Prüfung meldet die zuständige App `POST https://pbx.rosenweg4303.ch/api/apps/stand`: `{"geraet": sha256("rosenweg-geraet:"+ANDROID_ID), "plattform": "android", "geteilt": bool, "system": "Android SDK n", "apps": [{"paket", "version", "version_code"}]}` – keine Personendaten. Auf geteilten Telefonen läuft die tägliche Prüfung nur dafür. |
+
 ## Aufbau
 
 | Teil | Inhalt |

@@ -10,7 +10,7 @@ import android.os.Looper
 /**
  * Startet den Updater beim Start jeder App mit diesem Modul, ohne dass die App selbst etwas
  * aufrufen muss (wie androidx.startup). Nur das taegliche Pruefen einplanen; ob diese App
- * zustaendig ist, entscheidet die Pruefung.
+ * zustaendig ist (und ob nur der Stand gemeldet wird), entscheidet die Pruefung.
  *
  * Erst NACH allen ContentProvidern einplanen (0.1.5): WorkManager richtet sich selbst ueber den
  * InitializationProvider von androidx.startup ein. Im zusammengefuehrten Manifest steht dieser
@@ -29,7 +29,9 @@ class UpdaterStart : ContentProvider() {
 
     private fun einplanen(c: android.content.Context) {
         try {
-            if (!RosenwegUpdater.geraetDa(c)) RosenwegUpdater.einrichten(c)
+            // 0.1.6 auch auf geteilten Telefonen: dort installiert Rosenweg Geraet, die Pruefung
+            // meldet nur den Versionsstand ans NOC.
+            RosenwegUpdater.einrichten(c)
         } catch (e: Exception) {
             android.util.Log.w(RosenwegUpdater.TAG, "Start: ${e.javaClass.simpleName}: ${e.message}")
         }

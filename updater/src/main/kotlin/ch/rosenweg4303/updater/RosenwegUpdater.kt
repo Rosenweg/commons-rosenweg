@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -16,8 +17,11 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
@@ -42,7 +46,11 @@ object RosenwegUpdater {
     const val KATALOG = "https://pbx.rosenweg4303.ch/api/apps/index.json"
     private const val BASIS = "https://pbx.rosenweg4303.ch"
     private const val KANAL = "rosenweg_updates"
-    private const val NOTIF_ID = 4303
+    // 0.1.6: eigene Nummer. 4303 nimmt auch Rosenweg Messages fuer den Vordergrunddienst
+    // (MessengerVerbindung): beide Meldungen ersetzten sich gegenseitig.
+    internal const val NOTIF_ID = 0x52_57_55_50 // "RWUP"
+    /** Versionsstand an die Anlage (NOC), ohne Personendaten. */
+    const val STAND = "https://pbx.rosenweg4303.ch/api/apps/stand"
     private const val ARBEIT = "rosenweg-updater"
 
     /**
@@ -74,8 +82,10 @@ object RosenwegUpdater {
     }
 
     /** Bin ich (diese App) die zustaendige? */
-    fun zustaendig(c: Context): Boolean {
-        if (geraetDa(c)) return false
+    fun zustaendig(c: Context): Boolean = !geraetDa(c) && meldetStand(c)
+
+    /** Die zustaendige App ohne Blick auf Rosenweg Geraet: sie meldet den Versionsstand (0.1.6). */
+    internal fun meldetStand(c: Context): Boolean {
         // nur Apps, die den Updater schon enthalten (alte Versionen ohne ihn pruefen nie)
         val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) }
         // Eine App, die (noch) nicht in der Liste steht, prueft selbst, solange keine aus der Liste
@@ -96,16 +106,53 @@ object RosenwegUpdater {
 
     class Pruefung(ctx: Context, p: WorkerParameters) : Worker(ctx, p) {
         override fun doWork(): Result {
-            if (!zustaendig(applicationContext)) return Result.success()
+            val c = applicationContext
+            if (!meldetStand(c)) return Result.success()
+            if (geraetDa(c)) {
+                // geteiltes Telefon: Geraet installiert; hier nur den Stand melden (NOC)
+                standMelden(c, null)
+                return Result.success()
+            }
             return try {
-                val l = verfuegbar(applicationContext)
-                if (l.isNotEmpty()) melden(applicationContext, l) else abmelden(applicationContext)
+                val l = verfuegbar(c)
+                if (l.isNotEmpty()) melden(c, l) else abmelden(c)
                 Result.success()
+            } catch (e: UpdaterFehler) {
+                Log.w(TAG, "Pruefung: ${e.message}")
+                if (e.dauerhaft) Result.success() else Result.retry()
             } catch (e: Exception) {
                 Log.w(TAG, "Pruefung: ${e.javaClass.simpleName}")
                 Result.retry()
             }
         }
+    }
+
+    /**
+     * "Nach Updates suchen" (0.1.6): sofort pruefen und das Ergebnis zeigen - "Alle aktuell",
+     * "Neue Fassung X - Installieren" oder der Fehler im Klartext. Fuer den Knopf in den
+     * Einstellungen jeder App; geht aus jeder App mit dem Modul, auch wenn sie nicht die
+     * zustaendige ist. Auf geteilten Telefonen sagt die Seite, dass Rosenweg Geraet aktualisiert.
+     */
+    @JvmStatic
+    fun jetztPruefen(c: Context) {
+        val i = Intent(c, UpdateActivity::class.java)
+        if (c !is android.app.Activity) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        c.startActivity(i)
+    }
+
+    /** Fehler mit Text fuer die Person; dauerhaft = Wiederholen hilft nicht. */
+    class UpdaterFehler(text: String, val dauerhaft: Boolean = false, cause: Throwable? = null) : Exception(text, cause)
+
+    /** Technischer Fehler -> Satz fuer die Person. */
+    fun klartext(e: Throwable): String = when (e) {
+        is UpdaterFehler -> e.message.orEmpty()
+        is java.net.UnknownHostException -> "Keine Verbindung zum Rosenweg-Server. Ist das Handy mit dem Internet verbunden?"
+        is java.net.SocketTimeoutException -> "Der Rosenweg-Server antwortet nicht. Bitte später nochmals versuchen."
+        is javax.net.ssl.SSLException -> "Die sichere Verbindung zum Rosenweg-Server ist fehlgeschlagen (Datum und Uhrzeit richtig?)."
+        is java.io.IOException -> "Keine Verbindung zum Rosenweg-Server (${e.message ?: e.javaClass.simpleName})."
+        is org.json.JSONException -> "Der Rosenweg-Server hat eine unlesbare Antwort geschickt. Bitte später nochmals versuchen."
+        is SecurityException -> e.message ?: "Die geladene Datei ist nicht vertrauenswürdig und wurde gelöscht."
+        else -> "Unerwarteter Fehler: ${e.javaClass.simpleName}${e.message?.let { " – $it" }.orEmpty()}"
     }
 
     internal fun info(c: Context, paket: String): PackageInfo? = try {
@@ -149,7 +196,7 @@ object RosenwegUpdater {
     /** Updates fuer installierte Rosenweg-Apps (blockierend). */
     fun verfuegbar(c: Context): List<Update> {
         val text = http.newCall(Request.Builder().url(KATALOG).build()).execute().use { r ->
-            if (!r.isSuccessful) throw java.io.IOException("Katalog ${r.code}")
+            if (!r.isSuccessful) throw UpdaterFehler("Der Rosenweg-Server hat die Liste der Apps nicht geliefert (Fehler ${r.code}).")
             r.body?.string().orEmpty()
         }
         val j = JSONObject(text)
@@ -157,22 +204,70 @@ object RosenwegUpdater {
         // Der Katalog nennt die Signatur der Rosenweg-Apps: muss unsere sein, sonst nichts tun
         if (j.optString("signatur_sha256").lowercase() !in eigen) {
             Log.w(TAG, "Katalog-Signatur passt nicht zu dieser App")
-            return emptyList()
+            throw UpdaterFehler("Diese Fassung ist nicht mit dem Rosenweg-Schlüssel signiert (Entwicklungsfassung). " +
+                "Updates gibt es nur für Fassungen von rosenweg4303.ch/apps.", dauerhaft = true)
         }
         val apps = j.getJSONArray("apps")
         val l = mutableListOf<Update>()
+        val pakete = mutableSetOf<String>()
         for (i in 0 until apps.length()) {
             val a = apps.getJSONObject(i)
             val paket = a.optString("paket")
             val inst = info(c, paket) ?: continue
             if (signaturen(inst).intersect(eigen).isEmpty()) continue   // fremd signiert: nicht anfassen
+            pakete += paket
             val neu = a.optLong("version_code", 0)
             if (neu > versionCode(inst)) {
                 l += Update(paket, a.optString("name"), versionCode(inst), neu, a.optString("version_name"),
                     a.optString("sha256").lowercase(), a.optLong("groesse"), BASIS + a.optString("url"))
             }
         }
+        standMelden(c, pakete)
         return l
+    }
+
+    /** Geraet-Kennung fuer das NOC: SHA-256 der ANDROID_ID (gleich fuer alle Rosenweg-Apps, da
+     * gleicher Schluessel), mit festem Praefix. Keine Personendaten, nicht umkehrbar. */
+    internal fun geraetKennung(c: Context): String {
+        @android.annotation.SuppressLint("HardwareIds")
+        val id = Settings.Secure.getString(c.contentResolver, Settings.Secure.ANDROID_ID).orEmpty()
+        return sha256("rosenweg-geraet:$id".toByteArray())
+    }
+
+    /** Inhalt der Meldung an [STAND] (testbar ohne Android). */
+    internal fun standJson(geraet: String, geteilt: Boolean, sdk: Int, apps: List<Triple<String, String, Long>>): String =
+        JSONObject()
+            .put("geraet", geraet)
+            .put("plattform", "android")
+            .put("geteilt", geteilt)
+            .put("system", "Android SDK $sdk")
+            .put("apps", JSONArray().apply {
+                apps.forEach { (p, n, v) -> put(JSONObject().put("paket", p).put("version", n).put("version_code", v)) }
+            }).toString()
+
+    /**
+     * Versionsstand an die Anlage melden (beim Updater-Lauf, nur die zustaendige App, oder bei
+     * "Nach Updates suchen"): Geraet (gehasht), Paket, Version, Plattform. [pakete] = schon
+     * bekannte installierte Rosenweg-Apps, sonst die aus ZUSTAENDIG. Fehler bleiben still.
+     */
+    internal fun standMelden(c: Context, pakete: Set<String>?) {
+        try {
+            val eigen = eigeneSignatur(c)
+            val kandidaten = (pakete ?: emptySet()) + ZUSTAENDIG + c.packageName
+            val apps = kandidaten.mapNotNull { p ->
+                val i = info(c, p) ?: return@mapNotNull null
+                if (signaturen(i).intersect(eigen).isEmpty()) return@mapNotNull null
+                Triple(p, i.versionName.orEmpty(), versionCode(i))
+            }.sortedBy { it.first }
+            if (apps.isEmpty()) return
+            val body = standJson(geraetKennung(c), geraetDa(c), Build.VERSION.SDK_INT, apps)
+                .toRequestBody("application/json".toMediaType())
+            http.newCall(Request.Builder().url(STAND).post(body).build()).execute().use { r ->
+                if (!r.isSuccessful) Log.i(TAG, "Stand melden: ${r.code}")
+            }
+        } catch (e: Exception) {
+            Log.i(TAG, "Stand melden: ${e.javaClass.simpleName}")
+        }
     }
 
     private fun melden(c: Context, l: List<Update>) {
@@ -204,7 +299,7 @@ object RosenwegUpdater {
     internal fun laden(c: Context, u: Update): File {
         val f = File(c.cacheDir, "rosenweg-update-${u.paket}.apk")
         http.newCall(Request.Builder().url(u.url).build()).execute().use { r ->
-            if (!r.isSuccessful) throw java.io.IOException("Laden ${r.code}")
+            if (!r.isSuccessful) throw UpdaterFehler("Die neue Fassung ist gerade nicht erhältlich (Fehler ${r.code}).")
             val md = MessageDigest.getInstance("SHA-256")
             var n = 0L
             r.body!!.byteStream().use { inp ->
@@ -219,7 +314,7 @@ object RosenwegUpdater {
             }
             val ist = md.digest().joinToString("") { "%02x".format(it) }
             if (ist != u.sha256 || (u.groesse > 0 && n != u.groesse)) {
-                f.delete(); throw SecurityException("Prüfsumme stimmt nicht")
+                f.delete(); throw SecurityException("Die geladene Datei ist beschädigt (Prüfsumme stimmt nicht) und wurde gelöscht.")
             }
         }
         val p = if (Build.VERSION.SDK_INT >= 33) {
@@ -229,7 +324,7 @@ object RosenwegUpdater {
         }
         if (p == null || p.packageName != u.paket || versionCode(p) != u.neu ||
             signaturen(p).intersect(eigeneSignatur(c)).isEmpty()) {
-            f.delete(); throw SecurityException("APK passt nicht (Paket/Version/Signatur)")
+            f.delete(); throw SecurityException("Die geladene Datei passt nicht zur App (Paket, Version oder Signatur) und wurde gelöscht.")
         }
         return f
     }

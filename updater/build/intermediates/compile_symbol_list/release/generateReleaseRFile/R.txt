@@ -1,1 +1,0 @@
-int style RosenwegUpdater 0x0
