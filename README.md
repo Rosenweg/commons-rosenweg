@@ -25,8 +25,8 @@ Rosenweg Commons ist der Fork der Fossify Commons, gegen den alle Rosenweg-Fossi
 | Modul | Koordinate (Version) | Inhalt |
 |---|---|---|
 | `commons` | `org.fossify:commons` (`7.1.3-rosenweg.1`) | Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*` |
-| `cloud` | `ch.rosenweg4303:cloud` (0.10.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵. Bindet `updater` ein. |
-| `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.1.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
+| `cloud` | `ch.rosenweg4303:cloud` (0.12.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵. Bindet `updater` ein. |
+| `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.2.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
 | `updater` | `ch.rosenweg4303:updater` (0.1.2) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
 
 Auf geteilten Telefonen hat der Zugang von Rosenweg Gerät immer Vorrang.
@@ -47,11 +47,12 @@ Auf Handys ohne Rosenweg Gerät zeigt jede Rosenweg-App mit Backend beim Öffnen
 |---|---|
 | Rosenweg-Karte | hinten ans Telefon halten (NFC). Die Karte allein meldet an, ohne PIN – die PIN gibt es nur auf geteilten Telefonen. Die App erhält eine eigene Karten-Sitzung, gebunden ans Gerät (Schlüssel im Android-Keystore, `KartenSitzung`). |
 | Rosenweg-Konto | „Mit Rosenweg-Konto anmelden“ im Browser |
+| QR-Code (ab Cloud 0.12.0) | „QR-Code scannen“: auf einem anderen Gerät, an dem die Person angemeldet ist (z.B. am Computer), `rosenweg4303.ch/smartphones` → „App auf eigenem Handy“ öffnen und die Kamera auf den Code halten. Der Code (`RWAPP1:…`) gilt einmal und 90 s; die App bekommt dieselbe gerätegebundene Sitzung wie mit der Karte (`KartenSitzung.anmeldenMitQr`). Kamera-Recht erst beim Tippen, Kamera höchstens 60 s, solange ist der Kartenleser aus. Der QR der geteilten Telefone (`RWTEL1:…`) gilt hier nicht. |
 
 | Regel | Inhalt |
 |---|---|
 | je App | Jede App meldet sich selbst an; Abmelden betrifft nur diese App. |
-| Sitzungen | höchstens 20 aktive Karten-Sitzungen pro Person; eine neue löst die am längsten unbenutzte ab. Laufzeit 30 Tage. |
+| Sitzungen | höchstens 20 aktive App-Sitzungen (Karte oder QR) pro Person; eine neue löst die am längsten unbenutzte ab. Laufzeit 30 Tage. |
 | Karte entzogen | Die Karte wird bei jedem Erneuern live in UniFi Access geprüft; entzogen = Sitzung weg. |
 | Technik | sieht und widerruft jede Sitzung einzeln. |
 | Geteilte Telefone | dort gilt die Anmeldung von Rosenweg Gerät, kein eigener Schirm. |
