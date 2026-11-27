@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "ch.rosenweg4303.updater-release-18:/values-is/values-is.xml",
+            "map": [
+                {
+                    "source": "/Users/stefan/.gradle/caches/9.7.0/transforms/9eec8c2aa9ee5bf7a3fd2ed05c3d2d45/transformed/core-1.12.0/res/values-is/values-is.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,150,257,354,454,557,661,772",
+                        "endColumns": "94,106,96,99,102,103,110,100",
+                        "endOffsets": "145,252,349,449,552,656,767,868"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "ch.rosenweg4303.updater-mergeReleaseResources-16:/values-is/values-is.xml",
+            "map": [
+                {
+                    "source": "/Users/stefan/.gradle/caches/9.7.0/transforms/9eec8c2aa9ee5bf7a3fd2ed05c3d2d45/transformed/core-1.12.0/res/values-is/values-is.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,150,257,354,454,557,661,772",
+                        "endColumns": "94,106,96,99,102,103,110,100",
+                        "endOffsets": "145,252,349,449,552,656,767,868"
+                    }
+                }
+            ]
+        }
+    ]
+}
