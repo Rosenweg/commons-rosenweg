@@ -38,7 +38,8 @@ class InstallStatus : BroadcastReceiver() {
 
     companion object {
         const val PLAY_PROTECT = "Google Play Protect hat die Installation verhindert. Beim nächsten Versuch im " +
-            "Fenster von Play Protect „Mehr Details“ › „Trotzdem installieren“ wählen."
+            "Fenster von Play Protect auf „Weitere Details“ tippen und dann unter der Erklärung auf den Link " +
+            "„Trotzdem installieren“."
 
         /** Status des Android-Installers -> Satz fuer die Person (0.1.8, Befund A37: Salz wurde von
          * Play Protect abgelehnt, Status 3 mit INSTALL_FAILED_VERIFICATION_FAILURE). */
