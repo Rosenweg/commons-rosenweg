@@ -21,6 +21,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import ch.rosenweg4303.anmeldeschirm.AnmeldeFarben
 import ch.rosenweg4303.anmeldeschirm.AnmeldeOberflaeche as O
 import ch.rosenweg4303.anmeldeschirm.Kartenleser
 import com.google.zxing.BarcodeFormat
@@ -33,7 +34,7 @@ import com.journeyapps.barcodescanner.camera.CameraSettings
  * Anmeldeschirm der Rosenweg-Apps auf privaten Handys (ohne Rosenweg Geraet), Stefan 26.11.2026:
  * derselbe Schirm wie der Sperrbildschirm der geteilten Telefone (Rosenweg Geraet,
  * SperrActivity). Aussehen, Texte und Kartenleser kommen aus dem Modul anmeldeschirm, das auch
- * Geraet benutzt. Blauer Grund, Rosenweg-Abzeichen, "Rosenweg-Karte hinten ans Telefon halten",
+ * Geraet benutzt. Grund in der Gruppenfarbe (s.u.), Rosenweg-Abzeichen, "Rosenweg-Karte hinten ans Telefon halten",
  * darunter "Mit Rosenweg-Konto anmelden" und "QR-Code scannen" - in dieser Reihenfolge wie am
  * Sperrbildschirm. Die Karte allein meldet an (ohne PIN; die PIN gibt es nur auf geteilten
  * Telefonen). Nicht hier: Notruf (das eigene Handy ist nicht gesperrt) und "Kamera wechseln"
@@ -47,6 +48,14 @@ import com.journeyapps.barcodescanner.camera.CameraSettings
  * Kartenleser aus (bei manchen Handys sitzt die NFC-Antenne neben der Kamera).
  *
  * Gilt nur fuer DIESE App: jede Rosenweg-App meldet sich selbst an.
+ *
+ * Farbe (Stefan 27.11.2026): wie der Grund des App-Logos - Bewohner rot, Ausschuss/Verwaltung blau,
+ * Technik gruen ([AnmeldeFarben]). Die App setzt dafuer in res/values/
+ *
+ *     <string name="rosenweg_gruppe" translatable="false">bewohner</string>
+ *
+ * (oder verwaltung/technik); ohne Angabe bleibt der Schirm blau. Flutter-Apps geben die Gruppe
+ * per [EXTRA_GRUPPE] mit (rosenweg_basis, RosenwegApp.gruppe); das Extra geht der Ressource vor.
  *
  * Einbinden - in onResume der Hauptaktivitaet:
  *
@@ -77,6 +86,9 @@ class RosenwegAnmeldeSchirm : Activity() {
 
         /** true: nach der Anmeldung den Nextcloud-Zugang holen und speichern (fehlt er noch). */
         const val EXTRA_NEXTCLOUD = "ch.rosenweg4303.cloud.NEXTCLOUD"
+
+        /** Gruppe der App (bewohner, verwaltung, technik) statt der Ressource rosenweg_gruppe. */
+        const val EXTRA_GRUPPE = "ch.rosenweg4303.cloud.GRUPPE"
 
         private const val RECHT_KAMERA = 43
         private const val KAMERA_MS = 60_000L
@@ -127,14 +139,20 @@ class RosenwegAnmeldeSchirm : Activity() {
     private var zuletztGescanntUm = 0L
     private val kameraZeitAus = Runnable { kameraStoppen() }
 
+    /** Farben nach der Gruppe der App (Extra, sonst Ressource rosenweg_gruppe, sonst blau). */
+    private val f: AnmeldeFarben by lazy {
+        intent?.getStringExtra(EXTRA_GRUPPE)?.takeIf { it.isNotBlank() }?.let { AnmeldeFarben.gruppe(it) }
+            ?: AnmeldeFarben.fuer(this)
+    }
+
     private val appName: String by lazy {
         try { packageManager.getApplicationLabel(applicationInfo).toString() } catch (e: Exception) { "Rosenweg" }
     }
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
-        window.statusBarColor = Color.parseColor(O.BLAU)
-        window.navigationBarColor = Color.parseColor(O.BLAU)
+        window.statusBarColor = f.grund
+        window.navigationBarColor = f.grund
         setContentView(baue())
     }
 
@@ -205,12 +223,12 @@ class RosenwegAnmeldeSchirm : Activity() {
         leserAus()
         if (zeilen.isEmpty()) {   // Weg ueber das Rosenweg-Konto (Browser): Schritte jetzt zeigen
             ablaufZeigen(listOf("Anmeldung für $appName"))
-            O.schrittStand(zeilen[0], O.OK, RosenwegAnmeldung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" })
+            O.schrittStand(zeilen[0], O.OK, RosenwegAnmeldung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" }, f)
         }
-        val z = O.schrittZeile(this, "Nextcloud verbinden")
+        val z = O.schrittZeile(this, "Nextcloud verbinden", f)
         schritte.addView(z)
         zeilen.add(z)
-        O.schrittStand(z, O.LAEUFT, null)
+        O.schrittStand(z, O.LAEUFT, null, f)
         val app = applicationContext
         Thread {
             val fehler = try {
@@ -225,11 +243,11 @@ class RosenwegAnmeldeSchirm : Activity() {
             ui.post {
                 if (isFinishing) return@post
                 if (fehler == null) {
-                    O.schrittStand(z, O.OK, null)
+                    O.schrittStand(z, O.OK, null, f)
                     ui.postDelayed({ fertigSchliessen() }, 600)
                 } else {
                     // Die App ist angemeldet; die Nextcloud geht spaeter von Hand
-                    O.schrittStand(z, O.FEHLER, "$fehler – später unter Einstellungen → Rosenweg-Nextcloud")
+                    O.schrittStand(z, O.FEHLER, "$fehler – später unter Einstellungen → Rosenweg-Nextcloud", f)
                     ui.postDelayed({ fertigSchliessen() }, 3500)
                 }
             }
@@ -275,8 +293,8 @@ class RosenwegAnmeldeSchirm : Activity() {
 
     /** Karte oder QR eingeloest: Schritte gruen, dann weiter (Nextcloud) bzw. schliessen. */
     private fun angemeldet() {
-        O.schrittStand(zeilen[0], O.OK, null)
-        O.schrittStand(zeilen[1], O.OK, KartenSitzung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" })
+        O.schrittStand(zeilen[0], O.OK, null, f)
+        O.schrittStand(zeilen[1], O.OK, KartenSitzung.name(this)?.takeIf { it.isNotEmpty() }?.let { "angemeldet als $it" }, f)
         ui.postDelayed({ prueft = false; if (!isFinishing) fertig() }, 800)
     }
 
@@ -375,7 +393,7 @@ class RosenwegAnmeldeSchirm : Activity() {
     private fun grundzustand() {
         kopf.text = "$appName · zum Benutzen anmelden"
         kopf.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-        kopf.setTextColor(Color.parseColor(O.HELLBLAU))
+        kopf.setTextColor(f.hell)
         schrittRahmen.visibility = View.GONE
         obenPlatz.visibility = View.VISIBLE
         untenPlatz.visibility = View.VISIBLE
@@ -438,17 +456,17 @@ class RosenwegAnmeldeSchirm : Activity() {
         schritte.removeAllViews()
         zeilen.clear()
         for (t in titel) {
-            val z = O.schrittZeile(this, t)
+            val z = O.schrittZeile(this, t, f)
             schritte.addView(z)
             zeilen.add(z)
         }
         schrittRahmen.visibility = View.VISIBLE
-        O.schrittStand(zeilen[0], O.LAEUFT, if (holtNextcloud) null else erkannt)
+        O.schrittStand(zeilen[0], O.LAEUFT, if (holtNextcloud) null else erkannt, f)
     }
 
     /** Wie der Sperrbildschirm: Schritt rot mit Ursache, nach 8 s zurueck. */
     private fun fehler(text: String) {
-        zeilen.getOrNull(0)?.let { O.schrittStand(it, O.FEHLER, "$text – ${O.NOCHMALS}") }
+        zeilen.getOrNull(0)?.let { O.schrittStand(it, O.FEHLER, "$text – ${O.NOCHMALS}", f) }
         ui.postDelayed({
             prueft = false
             if (!isFinishing) grundzustand()
@@ -460,7 +478,7 @@ class RosenwegAnmeldeSchirm : Activity() {
 
     private fun dp(v: Number) = O.dp(this, v.toFloat())
 
-    private fun text(sp: Float, farbe: String, fett: Boolean) = O.text(this, sp, Color.parseColor(farbe), fett)
+    private fun text(sp: Float, farbe: Int, fett: Boolean) = O.text(this, sp, farbe, fett)
 
     private fun logoGroesse(groesse: Int) {
         logo.layoutParams = logo.layoutParams.apply {
@@ -473,15 +491,15 @@ class RosenwegAnmeldeSchirm : Activity() {
         val l = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setBackgroundColor(Color.parseColor(O.BLAU))
+            setBackgroundColor(f.grund)
             setPadding(dp(24), dp(40), dp(24), dp(24))
             fitsSystemWindows = true
         }
-        kopf = text(15f, O.HELLBLAU, false).apply { setPadding(0, dp(4), 0, dp(18)) }
+        kopf = text(15f, f.hell, false).apply { setPadding(0, dp(4), 0, dp(18)) }
         l.addView(kopf)
 
         // Kamerabild beim QR-Scannen (wie der Sperrbildschirm: oben, 280 dp, runder Rahmen)
-        kameraRahmen = O.kameraRahmen(this).apply { visibility = View.GONE }
+        kameraRahmen = O.kameraRahmen(this, f).apply { visibility = View.GONE }
         kamera = BarcodeView(this).apply {
             decoderFactory = DefaultDecoderFactory(listOf(BarcodeFormat.QR_CODE))
             decodeContinuous(gescannt)
@@ -504,11 +522,11 @@ class RosenwegAnmeldeSchirm : Activity() {
         }
         l.addView(schrittRahmen, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        kartenHinweis = text(20f, "#FFFFFF", true).apply { setPadding(0, dp(20), 0, 0) }
+        kartenHinweis = text(20f, Color.WHITE, true).apply { setPadding(0, dp(20), 0, 0) }
         l.addView(kartenHinweis)
-        hinweis = text(14f, O.HELLBLAU, false).apply { setPadding(0, dp(18), 0, 0) }
+        hinweis = text(14f, f.hell, false).apply { setPadding(0, dp(18), 0, 0) }
         l.addView(hinweis)
-        meldung = text(15f, O.ROT, false).apply {
+        meldung = text(15f, f.fehler, false).apply {
             setPadding(0, dp(12), 0, 0)
             visibility = View.GONE
         }
@@ -517,7 +535,7 @@ class RosenwegAnmeldeSchirm : Activity() {
         untenPlatz = View(this)
         l.addView(untenPlatz, LinearLayout.LayoutParams(1, 0, 1f))
 
-        nfcKnopf = O.knopf(this, O.NFC_EINSCHALTEN, O.KNOPF_DUNKEL).apply {
+        nfcKnopf = O.knopf(this, O.NFC_EINSCHALTEN, f.knopfDunkel).apply {
             setOnClickListener {
                 try { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) } catch (e: Exception) {
                     startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
@@ -526,18 +544,18 @@ class RosenwegAnmeldeSchirm : Activity() {
         }
         l.addView(nfcKnopf, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(10) })
 
-        kontoKnopf = O.knopf(this, O.KONTO_KNOPF, O.KNOPF).apply {
+        kontoKnopf = O.knopf(this, O.KONTO_KNOPF, f.knopf).apply {
             setOnClickListener { RosenwegAnmeldung.starten(this@RosenwegAnmeldeSchirm) }
         }
         l.addView(kontoKnopf, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52)).apply { bottomMargin = dp(10) })
 
         // Wie am Sperrbildschirm unter dem Konto-Knopf, etwas dunkler und niedriger
-        qrKnopf = O.knopf(this, O.QR_KNOPF, O.KNOPF_DUNKEL).apply {
+        qrKnopf = O.knopf(this, O.QR_KNOPF, f.knopfDunkel).apply {
             setOnClickListener { if (kameraAn) kameraStoppen() else kameraOeffnen() }
         }
         l.addView(qrKnopf, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(10) })
 
-        val fuss = text(12f, O.HELLBLAU, false).apply {
+        val fuss = text(12f, f.hell, false).apply {
             text = "Die Anmeldung gilt nur für $appName."
             setPadding(0, dp(8), 0, 0)
         }

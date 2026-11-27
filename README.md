@@ -25,9 +25,9 @@ Rosenweg Commons ist der Fork der Fossify Commons, gegen den alle Rosenweg-Fossi
 | Modul | Koordinate (Version) | Inhalt |
 |---|---|---|
 | `commons` | `org.fossify:commons` (`7.1.3-rosenweg.1`) | Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*` |
-| `cloud` | `ch.rosenweg4303:cloud` (0.13.4) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵ (ab 0.13.0 vollständig: WebDAV-Sync, Serien/Ausnahmen, Erinnerungen, Teilnehmer, Fotos, Gruppen, Hintergrund-Abgleich mit WorkManager, Konflikt-Protokoll); Einstellungsseite „Rosenweg-Nextcloud“ mit dem tatsächlichen Stand (`CloudStatus`). Bindet `updater` ein. |
-| `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.2.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
-| `updater` | `ch.rosenweg4303:updater` (0.1.4) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
+| `cloud` | `ch.rosenweg4303:cloud` (0.13.6) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵ (ab 0.13.0 vollständig: WebDAV-Sync, Serien/Ausnahmen, Erinnerungen, Teilnehmer, Fotos, Gruppen, Hintergrund-Abgleich mit WorkManager, Konflikt-Protokoll); Einstellungsseite „Rosenweg-Nextcloud“ mit dem tatsächlichen Stand (`CloudStatus`). Bindet `updater` ein. |
+| `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.2.1) | Aussehen, Texte, Schritt-Zeilen, Farben je Gruppe (`AnmeldeFarben`) und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
+| `updater` | `ch.rosenweg4303:updater` (0.1.5) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
 
 Auf geteilten Telefonen hat der Zugang von Rosenweg Gerät immer Vorrang.
 
@@ -56,6 +56,26 @@ Auf Handys ohne Rosenweg Gerät zeigt jede Rosenweg-App mit Backend beim Öffnen
 | Karte entzogen | Die Karte wird bei jedem Erneuern live in UniFi Access geprüft; entzogen = Sitzung weg. |
 | Technik | sieht und widerruft jede Sitzung einzeln. |
 | Geteilte Telefone | dort gilt die Anmeldung von Rosenweg Gerät, kein eigener Schirm. |
+
+### Farbe je Gruppe (ab Cloud 0.13.6)
+
+Der Schirm erscheint in der Farbe des Logo-Grundes der App (`baukasten.py --gruppe` in rosenweg-basis). Nur die Farben wechseln; Logo, Texte, Knöpfe und Aufbau bleiben gleich.
+
+| Gruppe | Grund | Apps |
+|---|---|---|
+| `bewohner` | Rosenweg-Rot `#D62828` | alle Kotlin-Apps, VM, Salz, Profil … |
+| `verwaltung` | Rosenweg-Blau `#1E3A8A` | Ausschuss, Hausverwaltung; **Standard ohne Angabe** |
+| `technik` | Dunkelgrün `#2E6B4F` | Technik, Admin (z.B. Karten) |
+
+Die App setzt die Gruppe in `app/src/main/res/values/rosenweg_gruppe.xml`:
+
+```xml
+<resources>
+    <string name="rosenweg_gruppe" translatable="false">bewohner</string>
+</resources>
+```
+
+Flutter-Apps setzen `gruppe:` in `RosenwegApp`; rosenweg_basis reicht sie als Extra `RosenwegAnmeldeSchirm.EXTRA_GRUPPE` durch (geht der Ressource vor). Ohne Angabe bleibt der Schirm blau, ebenso der Sperrbildschirm von Rosenweg Gerät. Auf Rot und Grün sind helle Texte, Meldungen und die weisse Schrift der (dort dunkleren) Knöpfe mindestens 4.5:1 (WCAG AA); geprüft in `AnmeldeFarbenTest`.
 
 So bindet eine App den Schirm ein:
 

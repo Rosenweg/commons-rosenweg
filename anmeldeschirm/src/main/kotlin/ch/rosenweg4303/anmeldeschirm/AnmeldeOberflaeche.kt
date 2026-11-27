@@ -25,6 +25,7 @@ import android.widget.TextView
  */
 object AnmeldeOberflaeche {
     // ─── Farben (wie der Ladebildschirm der Stationen) ──────────────────────
+    // Blau = Ausschuss/Verwaltung und Standard. Je Gruppe der App (rot, gruen): [AnmeldeFarben].
     const val BLAU = "#1E3A8A"
     const val HELLBLAU = "#BFDBFE"
     const val KNOPF = "#2563EB"
@@ -65,13 +66,17 @@ object AnmeldeOberflaeche {
 
     /** Knopf mit runden Ecken und feinem weissem Rand (Stefan 25.11.2026). */
     @JvmStatic
-    fun knopf(c: Context, beschriftung: String, farbe: String): Button = Button(c).apply {
+    fun knopf(c: Context, beschriftung: String, farbe: String): Button = knopf(c, beschriftung, Color.parseColor(farbe))
+
+    /** Wie oben, Farbe als Zahl (z.B. [AnmeldeFarben.knopf]). */
+    @JvmStatic
+    fun knopf(c: Context, beschriftung: String, farbe: Int): Button = Button(c).apply {
         text = beschriftung
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f)
         setTextColor(Color.WHITE)
         isAllCaps = false
         background = GradientDrawable().apply {
-            setColor(Color.parseColor(farbe))
+            setColor(farbe)
             cornerRadius = dp(c, 14f).toFloat()
             setStroke(maxOf(1, dp(c, 1.2f)), Color.WHITE)
         }
@@ -79,14 +84,15 @@ object AnmeldeOberflaeche {
 
     /**
      * Rahmen fuer das Kamerabild beim QR-Scannen: schwarz, runde Ecken, blauer Rand (wie der
-     * Sperrbildschirm). Das Kamerabild kommt als Kind hinein (MATCH_PARENT).
+     * Sperrbildschirm). Das Kamerabild kommt als Kind hinein (MATCH_PARENT). Rand je Gruppe: [f].
      */
     @JvmStatic
-    fun kameraRahmen(c: Context): FrameLayout = FrameLayout(c).apply {
+    @JvmOverloads
+    fun kameraRahmen(c: Context, f: AnmeldeFarben = AnmeldeFarben.BLAU): FrameLayout = FrameLayout(c).apply {
         background = GradientDrawable().apply {
             setColor(Color.BLACK)
             cornerRadius = dp(c, 18f).toFloat()
-            setStroke(dp(c, 3f), Color.parseColor(KNOPF))
+            setStroke(dp(c, 3f), f.rahmen)
         }
         val r = dp(c, 3f)
         setPadding(r, r, r, r)
@@ -104,22 +110,25 @@ object AnmeldeOberflaeche {
 
     /** Zeile eines Schritts ("○  Titel"); der Titel steht im Tag. */
     @JvmStatic
-    fun schrittZeile(c: Context, titel: String): TextView = text(c, 17f, Color.parseColor(HELLBLAU), false).apply {
-        gravity = Gravity.START
-        setPadding(0, dp(c, 5f), 0, dp(c, 5f))
-        text = "○  $titel"
-        tag = titel
-    }
+    @JvmOverloads
+    fun schrittZeile(c: Context, titel: String, f: AnmeldeFarben = AnmeldeFarben.BLAU): TextView =
+        text(c, 17f, f.hell, false).apply {
+            gravity = Gravity.START
+            setPadding(0, dp(c, 5f), 0, dp(c, 5f))
+            text = "○  $titel"
+            tag = titel
+        }
 
     /** Stand eines Schritts; bei FEHLER/WARNUNG mit kurzer Erklaerung darunter. */
     @JvmStatic
-    fun schrittStand(z: TextView, stand: Int, erklaerung: String?) {
+    @JvmOverloads
+    fun schrittStand(z: TextView, stand: Int, erklaerung: String?, f: AnmeldeFarben = AnmeldeFarben.BLAU) {
         val zeichen = when (stand) { LAEUFT -> "⏳"; OK -> "✓"; WARNUNG -> "⚠"; else -> "✗" }
         val farbe = when (stand) {
             LAEUFT -> Color.WHITE
-            OK -> Color.parseColor(GRUEN)
-            WARNUNG -> Color.parseColor(GELB)
-            else -> Color.parseColor(ROT)
+            OK -> f.ok
+            WARNUNG -> f.warnung
+            else -> f.fehler
         }
         z.text = zeichen + "  " + z.tag + (if (erklaerung.isNullOrEmpty()) "" else "\n     $erklaerung")
         z.setTextColor(farbe)
