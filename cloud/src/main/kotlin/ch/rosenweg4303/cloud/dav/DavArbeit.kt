@@ -1,6 +1,7 @@
 package ch.rosenweg4303.cloud.dav
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import androidx.work.Constraints
@@ -87,20 +88,30 @@ object DavPlaner {
     /** [name] eindeutig je App und Art, [klasse] die abgeleitete [DavArbeit], [uris] die Provider-Inhalte. */
     data class Plan(val name: String, val klasse: Class<out DavArbeit>, val uris: List<Uri>)
 
-    private fun netz(akku: Boolean = false) = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED)
-        .setRequiresBatteryNotLow(akku)
+    /**
+     * Netz-Bedingung nur, wenn die App ACCESS_NETWORK_STATE hat. Fossify-Apps entfernen das Recht
+     * teils per tools:node="remove" - dann wuerde WorkManager mit SecurityException jede Arbeit
+     * abbrechen ("Constraints not met"). Ohne das Recht laeuft die Arbeit ohne Netz-Bedingung;
+     * fehlt das Netz, wird sie wiederholt (retry).
+     */
+    private fun netz(c: Context, akku: Boolean = false): Constraints.Builder {
+        val darf = c.checkSelfPermission(android.Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED
+        if (!darf) Log.w("RosenwegDav", "ACCESS_NETWORK_STATE fehlt im Manifest der App - Abgleich ohne Netz-Bedingung")
+        return Constraints.Builder().setRequiredNetworkType(if (darf) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED)
+            .setRequiresBatteryNotLow(akku)
+    }
 
     /** Periodisch + Ausloeser einrichten (mehrfach aufrufen schadet nicht). */
     fun einrichten(c: Context, p: Plan) {
         val wm = WorkManager.getInstance(c.applicationContext)
         wm.enqueueUniquePeriodicWork("${p.name}-periodisch", ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequest.Builder(p.klasse, 15, TimeUnit.MINUTES).setConstraints(netz(akku = true).build())
+            PeriodicWorkRequest.Builder(p.klasse, 15, TimeUnit.MINUTES).setConstraints(netz(c, akku = true).build())
                 .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES).build())
         ausloeser(c, p, ExistingWorkPolicy.KEEP)
     }
 
     internal fun ausloeser(c: Context, p: Plan, regel: ExistingWorkPolicy) {
-        val bed = netz()
+        val bed = netz(c)
         p.uris.forEach { bed.addContentUriTrigger(it, true) }
         bed.setTriggerContentUpdateDelay(10, TimeUnit.SECONDS)
         bed.setTriggerContentMaxDelay(2, TimeUnit.MINUTES)
@@ -109,10 +120,13 @@ object DavPlaner {
                 .setInputData(Data.Builder().putBoolean(DavArbeit.AUSLOESER, true).build()).build())
     }
 
-    /** Gleich abgleichen (sobald Netz da ist). */
+    /**
+     * Gleich abgleichen, ohne Netz-Bedingung (ohne Netz: Wiederholung). Fuer "nach der Anmeldung"
+     * aus einem Empfaenger; in der App laeuft der Abgleich beim Oeffnen direkt (ohne WorkManager).
+     */
     fun sofort(c: Context, p: Plan) {
-        WorkManager.getInstance(c.applicationContext).enqueueUniqueWork("${p.name}-sofort", ExistingWorkPolicy.KEEP,
-            OneTimeWorkRequest.Builder(p.klasse).setConstraints(netz().build()).build())
+        WorkManager.getInstance(c.applicationContext).enqueueUniqueWork("${p.name}-sofort", ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequest.Builder(p.klasse).build())
     }
 
     /** Abgemeldet: nichts mehr planen. */

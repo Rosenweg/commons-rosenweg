@@ -46,6 +46,9 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
         /** Angehaengt an den Namen in Android, damit man die Nextcloud-Kalender erkennt. */
         const val ENDUNG = " (Nextcloud)"
         private const val ICS = "text/calendar; charset=utf-8"
+        /** Hochzuladen: geaendert, geloescht, oder ein Haupttermin ohne Server-Adresse (neu in der App angelegt). */
+        private const val HOCH = "${Events.DIRTY}=1 OR ${Events.DELETED}=1 OR " +
+            "(${Events.ORIGINAL_ID} IS NULL AND (${Events._SYNC_ID} IS NULL OR ${Events._SYNC_ID} NOT LIKE 'http%'))"
 
         fun alsAdapter(u: Uri): Uri = u.buildUpon()
             .appendQueryParameter(CalendarContract.CALLER_IS_SYNCADAPTER, "true")
@@ -80,7 +83,7 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
             val ids = kalenderIds(c)
             if (ids.isEmpty()) return false
             val n = c.contentResolver.query(alsAdapter(Events.CONTENT_URI), arrayOf(Events._ID),
-                "${Events.CALENDAR_ID} IN (${ids.joinToString(",")}) AND (${Events.DIRTY}=1 OR ${Events.DELETED}=1)", null, null)
+                "${Events.CALENDAR_ID} IN (${ids.joinToString(",")}) AND ($HOCH)", null, null)
                 ?.use { it.count } ?: 0
             if (n > 0) return true
             return c.contentResolver.query(Calendars.CONTENT_URI,
@@ -130,6 +133,7 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
     }
 
     private fun abgleichenIntern(): Ergebnis {
+        Log.i(TAG, "Abgleich Kalender beginnt")
         val server = dav.sammlungen(NextcloudDav.Art.KALENDER)
         val adresse = eigeneAdresse()
         farbenEinrichten()
@@ -349,14 +353,15 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
 
     /** -> (hochgeladen, neu zu holende Adressen, Konflikte) */
     private fun hochladen(kalender: Long, s: NextcloudDav.Sammlung, adresse: String?): Triple<Int, Set<String>, Int> {
-        val geaendert = ereignisse("${Events.CALENDAR_ID}=? AND (${Events.DIRTY}=1 OR ${Events.DELETED}=1)", arrayOf(kalender.toString()))
+        val geaendert = ereignisse("${Events.CALENDAR_ID}=? AND ($HOCH)", arrayOf(kalender.toString()))
         if (geaendert.isEmpty()) return Triple(0, emptySet(), 0)
         val hauptIds = geaendert.map { lng(it[Events.ORIGINAL_ID]) ?: lng(it[Events._ID])!! }.distinct()
         val nachholen = mutableSetOf<String>()
         var n = 0; var konflikte = 0
         for (hid in hauptIds) {
             val m = ereignisse("${Events._ID}=?", arrayOf(hid.toString())).firstOrNull() ?: continue
-            val href = (m[Events._SYNC_ID] as? String)?.let { dav.absolut(it) }
+            // nur eine echte Adresse in diesem Kalender; sonst ist der Termin neu (UID + ".ics", If-None-Match)
+            val href = NextcloudDav.inSammlung(m[Events._SYNC_ID] as? String, s.url)
             val etag = m[Events.SYNC_DATA1] as? String
             val titel = (m[Events.TITLE] as? String).orEmpty()
             try {
@@ -444,8 +449,8 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
         cr.query(alsAdapter(Events.CONTENT_URI), arrayOf(Events._ID, Events._SYNC_ID, Events.SYNC_DATA1, Events.DIRTY, Events.DELETED),
             "${Events.CALENDAR_ID}=? AND ${Events.ORIGINAL_ID} IS NULL", arrayOf(k.id.toString()), null)?.use { cur ->
             while (cur.moveToNext()) {
-                val href = cur.getString(1) ?: continue
-                lokal[dav.absolut(href)] = Zeile(cur.getLong(0), cur.getString(2).orEmpty(), cur.getInt(3) == 1 || cur.getInt(4) == 1)
+                val href = NextcloudDav.inSammlung(cur.getString(1), s.url) ?: continue
+                lokal[href] = Zeile(cur.getLong(0), cur.getString(2).orEmpty(), cur.getInt(3) == 1 || cur.getInt(4) == 1)
             }
         }
         var token: String? = null

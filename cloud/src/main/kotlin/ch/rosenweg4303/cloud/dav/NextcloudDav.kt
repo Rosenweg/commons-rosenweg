@@ -330,6 +330,20 @@ class NextcloudDav(private val konto: Konto, appName: String, private val heimFe
             return b.build().toString()
         }
 
+        /**
+         * Die Server-Adresse eines Objekts aus einer lokalen Zeile (_SYNC_ID, SOURCE_ID) - nur, wenn es
+         * eine absolute http(s)-Adresse IN [sammlung] ist, sonst null (= neu anlegen). Grund (A37,
+         * 27.11.2026): der Kalender-Provider setzt bei lokalen Konten selbst _SYNC_ID wie
+         * "Rosenweg-Nextcloud1795748294768"; daraus wurde "PUT /Rosenweg-Nextcloud..." (404) und ein
+         * multiget mit fremdem Pfad (403).
+         */
+        fun inSammlung(href: String?, sammlung: String): String? {
+            if (href.isNullOrBlank() || !(href.startsWith("https://") || href.startsWith("http://"))) return null
+            val h = try { norm(href) } catch (e: IllegalArgumentException) { return null }
+            val s = norm(sammlung).let { if (it.endsWith("/")) it else "$it/" }
+            return h.takeIf { it.startsWith(s) && it.length > s.length && !it.endsWith("/") }
+        }
+
         /** Dateiname fuer ein neues Objekt: die UID, wenn sie harmlos ist, sonst eine neue. */
         fun dateiname(uid: String, endung: String): String =
             (if (uid.matches(Regex("[A-Za-z0-9._-]{1,120}"))) uid else UUID.randomUUID().toString()) + endung

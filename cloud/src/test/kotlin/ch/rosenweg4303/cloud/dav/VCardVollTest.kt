@@ -83,6 +83,52 @@ class VCardVollTest {
     }
 
     @Test
+    fun favorit() {
+        val k = VKontakt("u", "Erika", favorit = true)
+        val t = VCard.schreiben(k)
+        assertTrue(t.contains("X-ROSENWEG-FAVORIT:1"))
+        assertTrue(VCard.lesen(t)!!.favorit)
+        assertFalse(VCard.lesen(VCard.schreiben(k.copy(favorit = false)))!!.favorit)
+        assertTrue(VCard.lesen(t)!!.unbekannt.none { it.startsWith("X-ROSENWEG-FAVORIT") })
+    }
+
+    @Test
+    fun standardAdressbuch() {
+        val h = "https://nextcloud.rosenweg4303.ch/remote.php/dav/addressbooks/users/stefan.mueller/"
+        fun b(n: String, nurLesen: Boolean = false) = NextcloudDav.Sammlung(h + n + "/", n, "", null, nurLesen)
+        val kuerzlich = b("z-app-generated--contactsinteraction--recent")
+        val geteilt = b("rosenweg_shared_by_kontakte")
+        val geteiltNurLesen = b("verwaltung_shared_by_x", nurLesen = true)
+        val privat = b("contacts")
+        val eigenes = b("vereine")
+        // Reihenfolge wie aus dem PROPFIND: Standardbuch ist trotzdem "contacts"
+        assertEquals(privat, KontakteAbbildung.standardBuch(listOf(kuerzlich, geteilt, geteiltNurLesen, eigenes, privat)))
+        // ohne "contacts": erstes eigenes beschreibbares, nie geteilt, nie Systembuch
+        assertEquals(eigenes, KontakteAbbildung.standardBuch(listOf(kuerzlich, geteilt, eigenes)))
+        assertNull(KontakteAbbildung.standardBuch(listOf(kuerzlich, geteilt, geteiltNurLesen)))
+        assertNull(KontakteAbbildung.standardBuch(listOf(b("contacts", nurLesen = true))))
+        assertFalse(KontakteAbbildung.abgleichen(kuerzlich))
+        assertTrue(KontakteAbbildung.abgleichen(geteilt))
+    }
+
+    @Test
+    fun fnNieLeer() {
+        fun fn(k: VKontakt) = Zeilen.lesen(VCard.schreiben(k)).first { it.name == "FN" }.wert
+        assertEquals("+41 79 000 00 00", fn(VKontakt("u", "", telefone = listOf(VEintrag(listOf("cell"), "+41 79 000 00 00")))))
+        assertEquals("a@example.org", fn(VKontakt("u", " ", emails = listOf(VEintrag(emptyList(), "a@example.org")),
+            telefone = listOf(VEintrag(emptyList(), "123")))))
+        assertEquals("Rosenweg", fn(VKontakt("u", "", firma = "Rosenweg", emails = listOf(VEintrag(emptyList(), "a@example.org")))))
+        assertEquals("Erika Muster", fn(VKontakt("u", "", "Erika", "Muster", firma = "Rosenweg")))
+        assertEquals("Erika", fn(VKontakt("u", "Erika")))
+        // Android liefert bei nur einer Nummer den leeren Namen: Abbildung + Schreiben ergibt die Nummer
+        val nurNummer = KontakteAbbildung.vonAndroid("u", listOf(KontakteAbbildung.Daten(
+            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
+            mapOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER to "3001",
+                android.provider.ContactsContract.CommonDataKinds.Phone.TYPE to 2L))), emptyList())
+        assertEquals("3001", fn(nurNummer))
+    }
+
+    @Test
     fun abbildungAufContactsContract() {
         val k = VCard.lesen(nextcloud)!!
         val d = KontakteAbbildung.nachAndroid(k)
@@ -135,6 +181,16 @@ class VCardVollTest {
         assertEquals(NextcloudDav.norm("https://h/a/b%40c.ics"), NextcloudDav.norm("https://h/a/b@c.ics"))
         assertEquals("https://h/a/", NextcloudDav.norm("https://h/a/"))
         assertEquals("x-1.ics", NextcloudDav.dateiname("x-1", ".ics"))
+        // Adresse nur, wenn sie in der Sammlung liegt (A37: Provider setzt _SYNC_ID "Rosenweg-Nextcloud<Zeit>")
+        val k = "https://nextcloud.rosenweg4303.ch/remote.php/dav/calendars/stefan.mueller/personal/"
+        assertNull(NextcloudDav.inSammlung("Rosenweg-Nextcloud1795748294768", k))
+        assertNull(NextcloudDav.inSammlung(null, k))
+        assertNull(NextcloudDav.inSammlung("", k))
+        assertNull(NextcloudDav.inSammlung("https://nextcloud.rosenweg4303.ch/Rosenweg-Nextcloud1795748294768", k))
+        assertNull(NextcloudDav.inSammlung("https://nextcloud.rosenweg4303.ch/remote.php/dav/calendars/stefan.mueller/andere/a.ics", k))
+        assertNull(NextcloudDav.inSammlung(k, k))
+        assertEquals(NextcloudDav.norm(k + "a%40b.ics"), NextcloudDav.inSammlung(k + "a@b.ics", k))
+        assertEquals(k + "x.ics", NextcloudDav.inSammlung(k + "x.ics", k.trimEnd('/')))
         assertTrue(NextcloudDav.dateiname("a b@c", ".ics").matches(Regex("[0-9a-f-]{36}\\.ics")))
     }
 }
