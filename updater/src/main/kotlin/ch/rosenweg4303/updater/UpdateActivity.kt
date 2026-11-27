@@ -26,10 +26,14 @@ class UpdateActivity : Activity() {
     private lateinit var a: UpdateAnsicht
     private var updates: List<RosenwegUpdater.Update> = emptyList()
 
+    /** Nach dem Erteilen des Rechts (auch nach Prozess-Ende) gleich installieren. */
+    private var nachRechtInstallieren = false
+
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         a = UpdateAnsicht(this)
         setContentView(a.wurzel)
+        nachRechtInstallieren = intent?.getBooleanExtra(EXTRA_NACH_RECHT, false) == true
         if (laeuft) zeigeLaufend() else laden()
         fortsetzenAusMeldung(intent)
     }
@@ -51,13 +55,18 @@ class UpdateActivity : Activity() {
         super.onResume()
         when {
             // zurueck aus "Apps aus dieser Quelle installieren": erneut pruefen, dann weiter
-            wartetAufRecht && darfInstallieren() -> {
-                wartetAufRecht = false; a.hinweis(null)
+            RechtMerker.wartet(this) && darfInstallieren() -> {
+                val danach = RechtMerker.danachInstallieren(this)
+                RechtMerker.vergessen(this); a.hinweis(null)
                 // nach "Installieren" erlaubt: gleich weiter; sonst nur den Knopf zuruecksetzen
-                if (warteschlange.isNotEmpty() && !laeuft) naechste()
-                else if (!laeuft && updates.isNotEmpty()) a.hauptknopf(if (updates.size == 1) "Installieren" else "Alle installieren") { starten() }
+                when {
+                    laeuft -> zeigeLaufend()
+                    danach && updates.isNotEmpty() -> starten()
+                    danach -> nachRechtInstallieren = true   // Liste laedt noch, zeigen() startet
+                    updates.isNotEmpty() -> a.hauptknopf(if (updates.size == 1) "Installieren" else "Alle installieren") { starten() }
+                }
             }
-            wartetAufRecht -> rechtFehlt()
+            RechtMerker.wartet(this) -> rechtFehlt()
             laeuft -> zeigeLaufend()
         }
     }
@@ -71,14 +80,21 @@ class UpdateActivity : Activity() {
     /** Ohne das Recht nicht ins Leere laufen: klarer Hinweis mit "Erlauben". */
     private fun rechtFehlt() {
         a.hinweis("Damit Rosenweg-Apps Updates installieren dürfen, einmal „Apps aus dieser Quelle zulassen“ " +
-            "einschalten und dann zurück tippen – es geht danach von selbst weiter.", "Erlauben") { erlauben() }
-        a.hauptknopf("Erlauben") { erlauben() }
+            "einschalten und dann zurück tippen – es geht danach von selbst weiter.", "Erlauben") { erlauben(false) }
+        a.hauptknopf("Erlauben") { erlauben(true) }
     }
 
-    private fun erlauben() {
-        wartetAufRecht = true
+    /**
+     * Einstellung "Apps aus dieser Quelle installieren" oeffnen. 0.1.8 (Befund A37 0.1.8b): Samsung
+     * beendet beim Umschalten den Prozess der App, die Seite war danach weg. Darum dauerhaft merken
+     * ([RechtMerker]); die Einstellung laeuft in einem eigenen Task, und beim naechsten Sichtbarwerden
+     * einer Activity der App oeffnet [UpdaterStart] diese Seite wieder.
+     */
+    private fun erlauben(danachInstallieren: Boolean) {
+        RechtMerker.merken(this, danachInstallieren)
         try {
-            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: Exception) {
             a.hinweis("Die Einstellung liess sich nicht öffnen. Bitte unter Einstellungen › Apps › " +
                 "${applicationInfo.loadLabel(packageManager)} › „Unbekannte Apps installieren“ erlauben.")
@@ -148,6 +164,7 @@ class UpdateActivity : Activity() {
             if (l.size == 1) l[0].name else "für Rosenweg-Apps auf diesem Handy")
         a.hauptknopf(if (l.size == 1) "Installieren" else "Alle installieren") { starten() }
         if (!darfInstallieren()) rechtFehlt()
+        else if (nachRechtInstallieren) { nachRechtInstallieren = false; starten() }
     }
 
     private fun fassung(paket: String): String = RosenwegUpdater.info(this, paket)?.versionName ?: ""
@@ -160,7 +177,7 @@ class UpdateActivity : Activity() {
         if (laeuft) { zeigeLaufend(); return }   // nie zwei Installationen gleichzeitig (Befund A37)
         // die eigene App zuletzt: ihr Update beendet diesen Prozess
         warteschlange.clear(); warteschlange.addAll(updates.sortedBy { it.paket == packageName })
-        if (!darfInstallieren()) { rechtFehlt(); erlauben(); return }
+        if (!darfInstallieren()) { rechtFehlt(); erlauben(true); return }
         naechste()
     }
 
@@ -252,8 +269,8 @@ class UpdateActivity : Activity() {
         internal var offeneBestaetigung: Intent? = null
         internal val laeuft: Boolean get() = aktuell != null
 
-        /** "Erlauben" gedrueckt, zurueck aus den Einstellungen geht es weiter. */
-        internal var wartetAufRecht = false
+        /** Von [UpdaterStart]: nach dem Erteilen des Rechts zurueck auf diese Seite. */
+        const val EXTRA_NACH_RECHT = "ch.rosenweg4303.updater.NACH_RECHT"
 
         internal fun bestaetigungZeigen(c: Context, i: Intent) {
             try {
