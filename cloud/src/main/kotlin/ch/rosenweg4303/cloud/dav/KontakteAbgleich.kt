@@ -51,6 +51,9 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
         private const val VCF = "text/vcard; charset=utf-8"
         private const val KATEGORIE = "kategorie:"
         private const val FOTO_MAX = 400_000
+        /** Hochzuladen: geaendert, geloescht, oder ohne Server-Adresse (neu in der App angelegt). */
+        private const val HOCH = "${RawContacts.DIRTY}=1 OR ${RawContacts.DELETED}=1 OR " +
+            "${RawContacts.SOURCE_ID} IS NULL OR ${RawContacts.SOURCE_ID} NOT LIKE 'http%'"
 
         /** Abmelden: Konto samt Kontakten weg (die Daten bleiben auf dem Server). */
         fun entfernen(c: Context, kontoTyp: String) {
@@ -62,7 +65,7 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
 
         /** Gibt es lokal etwas hochzuladen? Ohne Netz, billig (Ausloeser "lokale Aenderung"). */
         fun lokalGeaendert(c: Context, kontoTyp: String): Boolean {
-            val wo = "${RawContacts.ACCOUNT_TYPE}=? AND ${RawContacts.ACCOUNT_NAME}=? AND (${RawContacts.DIRTY}=1 OR ${RawContacts.DELETED}=1)"
+            val wo = "${RawContacts.ACCOUNT_TYPE}=? AND ${RawContacts.ACCOUNT_NAME}=? AND ($HOCH)"
             val n = c.contentResolver.query(RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.CALLER_IS_SYNCADAPTER, "true").build(),
                 arrayOf(RawContacts._ID), wo, arrayOf(kontoTyp, KONTO_NAME), null)?.use { it.count } ?: 0
             if (n > 0) return true
@@ -210,13 +213,15 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
         var n = 0; var konflikte = 0
         cr.query(alsAdapter(RawContacts.CONTENT_URI),
             arrayOf(RawContacts._ID, RawContacts.SOURCE_ID, RawContacts.SYNC1, RawContacts.SYNC2, RawContacts.DELETED, RawContacts.SYNC3),
-            "$unser AND (${RawContacts.DIRTY}=1 OR ${RawContacts.DELETED}=1)", unserArgs, null)?.use { cur ->
+            "$unser AND ($HOCH)", unserArgs, null)?.use { cur ->
             while (cur.moveToNext()) {
                 val id = cur.getLong(0)
-                val href = cur.getString(1)?.let { dav.absolut(it) }
+                // nur eine echte Adresse in einem der Buecher; sonst ist der Kontakt neu
+                val href = buecher.firstNotNullOfOrNull { NextcloudDav.inSammlung(cur.getString(1), it.url) }
                 val etag = cur.getString(2)
                 val zeile = ContentUris.withAppendedId(alsAdapter(RawContacts.CONTENT_URI), id)
-                val buchUrl = cur.getString(5)?.let { dav.absolut(it) } ?: standard?.url
+                val buchUrl = href?.let { h -> buecher.first { h.startsWith(it.url) }.url }
+                    ?: cur.getString(5)?.let { dav.absolut(it) }?.takeIf { u -> buecher.any { it.url == u } } ?: standard?.url
                 val buch = buecher.firstOrNull { it.url == buchUrl }
                 var name = ""
                 try {
@@ -320,9 +325,7 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
             arrayOf(RawContacts._ID, RawContacts.SOURCE_ID, RawContacts.SYNC1, RawContacts.DIRTY, RawContacts.DELETED, RawContacts.SYNC3),
             unser, unserArgs, null)?.use { cur ->
             while (cur.moveToNext()) {
-                val href = cur.getString(1)?.let { dav.absolut(it) } ?: continue
-                val buch = cur.getString(5)?.let { dav.absolut(it) }
-                if (buch != b.url && !(buch == null && href.startsWith(b.url))) continue
+                val href = NextcloudDav.inSammlung(cur.getString(1), b.url) ?: continue
                 lokal[href] = Zeile(cur.getLong(0), cur.getString(2).orEmpty(), cur.getInt(3) == 1 || cur.getInt(4) == 1)
             }
         }

@@ -135,6 +135,16 @@ class VCardVollTest {
         assertEquals(NextcloudDav.norm("https://h/a/b%40c.ics"), NextcloudDav.norm("https://h/a/b@c.ics"))
         assertEquals("https://h/a/", NextcloudDav.norm("https://h/a/"))
         assertEquals("x-1.ics", NextcloudDav.dateiname("x-1", ".ics"))
+        // Adresse nur, wenn sie in der Sammlung liegt (A37: Provider setzt _SYNC_ID "Rosenweg-Nextcloud<Zeit>")
+        val k = "https://nextcloud.rosenweg4303.ch/remote.php/dav/calendars/stefan.mueller/personal/"
+        assertNull(NextcloudDav.inSammlung("Rosenweg-Nextcloud1795748294768", k))
+        assertNull(NextcloudDav.inSammlung(null, k))
+        assertNull(NextcloudDav.inSammlung("", k))
+        assertNull(NextcloudDav.inSammlung("https://nextcloud.rosenweg4303.ch/Rosenweg-Nextcloud1795748294768", k))
+        assertNull(NextcloudDav.inSammlung("https://nextcloud.rosenweg4303.ch/remote.php/dav/calendars/stefan.mueller/andere/a.ics", k))
+        assertNull(NextcloudDav.inSammlung(k, k))
+        assertEquals(NextcloudDav.norm(k + "a%40b.ics"), NextcloudDav.inSammlung(k + "a@b.ics", k))
+        assertEquals(k + "x.ics", NextcloudDav.inSammlung(k + "x.ics", k.trimEnd('/')))
         assertTrue(NextcloudDav.dateiname("a b@c", ".ics").matches(Regex("[0-9a-f-]{36}\\.ics")))
     }
 }
