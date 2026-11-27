@@ -58,6 +58,8 @@ object KartenSitzung {
     fun angemeldet(c: Context) = prefs(c).getString("sitzung", null) != null
     fun name(c: Context): String? = prefs(c).getString("name", null)
     fun email(c: Context): String? = prefs(c).getString("email", null)
+    /** Wie angemeldet: "mit Karte" oder "mit QR-Code" (null: aeltere Sitzung, mit Karte). */
+    fun weg(c: Context): String? = prefs(c).getString("weg", null)
 
     /**
      * Kennung des Geraets fuer "neues Geraet" (Mail an die Person): sha256 der ANDROID_ID. Seit
@@ -167,7 +169,8 @@ object KartenSitzung {
         val alt = prefs(c).getString("alias", null)
         uebernehmen(j)
         prefs(c).edit().putString("sitzung", j.getString("sitzung")).putString("alias", alias)
-            .putString("name", j.optString("name")).putString("email", j.optString("email")).apply()
+            .putString("name", j.optString("name")).putString("email", j.optString("email"))
+            .putString("weg", wie).apply()
         if (alt != alias) schluesselWeg(alt)   // die alte Sitzung hat der Server ersetzt
         Log.i(TAG, "$wie angemeldet")
     }

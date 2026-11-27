@@ -25,7 +25,7 @@ Rosenweg Commons ist der Fork der Fossify Commons, gegen den alle Rosenweg-Fossi
 | Modul | Koordinate (Version) | Inhalt |
 |---|---|---|
 | `commons` | `org.fossify:commons` (`7.1.3-rosenweg.1`) | Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*` |
-| `cloud` | `ch.rosenweg4303:cloud` (0.12.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵. Bindet `updater` ein. |
+| `cloud` | `ch.rosenweg4303:cloud` (0.13.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵ (ab 0.13.0 vollständig: WebDAV-Sync, Serien/Ausnahmen, Erinnerungen, Teilnehmer, Fotos, Gruppen, Hintergrund-Abgleich mit WorkManager, Konflikt-Protokoll); Einstellungsseite „Rosenweg-Nextcloud“ mit dem tatsächlichen Stand (`CloudStatus`). Bindet `updater` ein. |
 | `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.2.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
 | `updater` | `ch.rosenweg4303:updater` (0.1.2) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
 
@@ -73,7 +73,7 @@ Apps mit der Rosenweg-Nextcloud rufen `RosenwegAnmeldeSchirm.zeigenFallsNoetig(t
 |---|---|
 | nach der Anmeldung | Der Schirm holt gleich den Nextcloud-Zugang von der Anlage (Schritt „Nextcloud verbinden“, `NextcloudZugang.holenUndSpeichern`). Niemand muss danach noch „Anmelden“ in den Einstellungen antippen. |
 | schon angemeldet, Zugang fehlt | Der Zugang wird im Hintergrund nachgeholt. |
-| Anlage nicht erreichbar | „Rosenweg-Nextcloud“ in den Einstellungen bleibt als Weg von Hand. |
+| Anlage nicht erreichbar | „Rosenweg-Nextcloud“ in den Einstellungen zeigt den Fehler; „Nextcloud neu verbinden“ holt den Zugang nochmals (ab 0.13.0 ohne Login-Flow-Nebenweg). |
 | Abmelden | Auf dem eigenen Handy meldet „Abmelden“ dort auch die App ab. |
 
 `RosenwegAnmeldung.angemeldet`, `name`, `zugangsToken`, `zugangUngueltig` und `abmelden` decken beide Wege ab. Server: Rosenweg/Website, `api/routes/app-karte.js`.
@@ -96,7 +96,7 @@ Android lässt jede Installation bestätigen. Auf geteilten Telefonen übernimmt
 |---|---|
 | `commons/` | Fossify Commons (Rosenweg-Fassung) |
 | `cloud/…/RosenwegAnmeldeSchirm.kt`, `RosenwegAnmeldung.kt`, `KartenSitzung.kt` | Anmeldeschirm, Anmeldung mit Karte oder Konto |
-| `cloud/…/AnmeldenActivity.kt`, `NextcloudZugang.kt`, `LoginFlow.kt`, `Konto.kt` | Nextcloud-Zugang: App-Passwort von der Anlage oder Login-Flow im Browser |
+| `cloud/…/AnmeldenActivity.kt`, `NextcloudZugang.kt`, `LoginFlow.kt`, `Konto.kt` | Nextcloud-Zugang: App-Passwort von der Anlage; Einstellungsseite mit Stand (`CloudStatus.kt`) |
 | `cloud/…/Hochladen.kt`, `Ablage.kt`, `Einstellungen.kt`, `Hinweis.kt`, `WebDav.kt` | Warteschlange, Dateien, Einstellungen pro Person |
 | `cloud/…/dav/` | CalDAV/CardDAV-Abgleich (`KalenderAbgleich`, `KontakteAbgleich`) |
 | `anmeldeschirm/` | `AnmeldeOberflaeche`, Kartenleser, Logo |

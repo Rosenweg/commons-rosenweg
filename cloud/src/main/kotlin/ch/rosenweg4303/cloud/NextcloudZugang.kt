@@ -61,8 +61,16 @@ object NextcloudZugang {
         }.start()
     }
 
-    /** Blockierend. Wirft [Fehler] (Text fuer die Person) oder IOException (Netz). */
-    fun holen(c: Context, appName: String): Konto {
+    /** Blockierend. Wirft [Fehler] (Text fuer die Person) oder IOException (Netz). Stand -> [CloudStatus]. */
+    fun holen(c: Context, appName: String): Konto = try {
+        holenOhneStatus(c, appName).also { CloudStatus.nextcloud(c, null) }
+    } catch (e: Fehler) {
+        CloudStatus.nextcloud(c, e.message); throw e
+    } catch (e: java.io.IOException) {
+        CloudStatus.nextcloud(c, "keine Verbindung zum Rosenweg"); throw e
+    }
+
+    private fun holenOhneStatus(c: Context, appName: String): Konto {
         val token = RosenwegAnmeldung.zugangsToken(c) ?: throw Fehler("Bitte zuerst anmelden", 401)
         val geraet = listOf(Build.MANUFACTURER, Build.MODEL).filter { it.isNotBlank() }.distinct().joinToString(" ")
         val body = JSONObject().put("app", c.packageName).put("app_name", appName).put("geraet", geraet)
