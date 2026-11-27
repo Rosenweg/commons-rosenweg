@@ -186,13 +186,17 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
      * Statusleiste, sein Inhalt beginnt darunter; unten Platz fuer Navigations-/Gestenleiste. */
     private fun randAnwenden() {
         wurzel.setOnApplyWindowInsetsListener { _, ins ->
-            val typ = android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout()
-            val r = if (android.os.Build.VERSION.SDK_INT >= 30) ins.getInsets(typ)
-            else @Suppress("DEPRECATION") android.graphics.Insets.of(ins.systemWindowInsetLeft, ins.systemWindowInsetTop,
-                ins.systemWindowInsetRight, ins.systemWindowInsetBottom)
-            kopf.setPadding(dp(20) + r.left, dp(20) + r.top, dp(20) + r.right, dp(20))
-            unten.setPadding(dp(20) + r.left, dp(12), dp(20) + r.right, dp(20) + r.bottom)
-            inhaltRand.setPadding(dp(16) + r.left, dp(16), dp(16) + r.right, dp(16))
+            val r = if (android.os.Build.VERSION.SDK_INT >= 30) {
+                val i = ins.getInsets(android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout())
+                intArrayOf(i.left, i.top, i.right, i.bottom)
+            } else {
+                @Suppress("DEPRECATION")
+                intArrayOf(ins.systemWindowInsetLeft, ins.systemWindowInsetTop, ins.systemWindowInsetRight, ins.systemWindowInsetBottom)
+            }
+            val (l, o, re, u) = r.toList()
+            kopf.setPadding(dp(20) + l, dp(20) + o, dp(20) + re, dp(20))
+            unten.setPadding(dp(20) + l, dp(12), dp(20) + re, dp(20) + u)
+            inhaltRand.setPadding(dp(16) + l, dp(16), dp(16) + re, dp(16))
             ins
         }
     }
