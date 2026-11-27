@@ -33,6 +33,9 @@ fun ComponentActivity.appLaunchedCompose(
     if (baseConfig.appRunCount == 0) {
         baseConfig.wasOrangeIconChecked = true
         checkAppIconColor()
+    } else if (!baseConfig.wasOrangeIconChecked && Rosenweg.festesSymbol(packageName)) {
+        // Rosenweg: Startsymbol gehoert RosenwegGruppenFarbe, nicht Fossifys Umstellung auf .Green
+        baseConfig.wasOrangeIconChecked = true
     } else if (!baseConfig.wasOrangeIconChecked) {
         baseConfig.wasOrangeIconChecked = true
         val primaryColor = ContextCompat.getColor(this, R.color.color_primary)

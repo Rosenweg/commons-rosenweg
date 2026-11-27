@@ -24,6 +24,7 @@ object Rosenweg {
      * Apps auf dasselbe Rosenweg-Logo, ein Wechsel wuerde nur den Aktivitaets-Alias umschalten,
      * und dabei kann das Symbol vom Startbildschirm verschwinden (Fossify-Warnung
      * app_icon_color_warning). Original-Fossify-Apps (org.fossify.*) behalten die Auswahl.
+     * Apps mit Gruppenfarbe schalten die Aliasse selbst um: [RosenwegGruppenFarbe].
      */
     fun festesSymbol(paket: String?) = paket?.startsWith(PRAEFIX, true) == true
 
