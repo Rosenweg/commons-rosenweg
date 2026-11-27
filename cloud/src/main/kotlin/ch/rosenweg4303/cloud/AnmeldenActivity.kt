@@ -86,7 +86,7 @@ class AnmeldenActivity : Activity() {
                 addView(nochmal)
                 // Rosenweg Updater (0.1.6): sofort pruefen, Ergebnis auf eigener Seite
                 addView(Button(context).apply {
-                    text = "Nach Updates suchen"
+                    setText(ch.rosenweg4303.updater.R.string.rosenweg_nach_updates_suchen)
                     setOnClickListener { ch.rosenweg4303.updater.RosenwegUpdater.jetztPruefen(this@AnmeldenActivity) }
                 })
             })

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fuer den Eintrag "Nach Updates suchen" in den Einstellungen der Apps (RosenwegUpdater.jetztPruefen) -->
+<resources>
+    <string name="rosenweg_nach_updates_suchen">Nach Updates suchen</string>
+    <string name="rosenweg_nach_updates_suchen_text">Rosenweg-Apps auf diesem Gerät jetzt prüfen</string>
+</resources>
