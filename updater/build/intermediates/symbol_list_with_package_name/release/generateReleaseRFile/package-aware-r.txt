@@ -1,2 +1,0 @@
-ch.rosenweg4303.updater
-style RosenwegUpdater
