@@ -51,14 +51,22 @@ class UpdateActivity : Activity() {
         super.onResume()
         when {
             // zurueck aus "Apps aus dieser Quelle installieren": erneut pruefen, dann weiter
-            wartetAufRecht && darfInstallieren() -> { wartetAufRecht = false; a.hinweis(null); naechste() }
+            wartetAufRecht && darfInstallieren() -> {
+                wartetAufRecht = false; a.hinweis(null)
+                // nach "Installieren" erlaubt: gleich weiter; sonst nur den Knopf zuruecksetzen
+                if (warteschlange.isNotEmpty() && !laeuft) naechste()
+                else if (!laeuft && updates.isNotEmpty()) a.hauptknopf(if (updates.size == 1) "Installieren" else "Alle installieren") { starten() }
+            }
             wartetAufRecht -> rechtFehlt()
-            !laeuft && warteschlange.isNotEmpty() && darfInstallieren() -> naechste()
             laeuft -> zeigeLaufend()
         }
     }
 
-    private fun darfInstallieren() = packageManager.canRequestPackageInstalls()
+    private fun darfInstallieren(): Boolean {
+        val ja = packageManager.canRequestPackageInstalls()
+        android.util.Log.i(RosenwegUpdater.TAG, "Recht Unbekannte Apps installieren: $ja")
+        return ja
+    }
 
     /** Ohne das Recht nicht ins Leere laufen: klarer Hinweis mit "Erlauben". */
     private fun rechtFehlt() {
@@ -106,6 +114,8 @@ class UpdateActivity : Activity() {
             Thread { RosenwegUpdater.standMelden(this, null) }.start()
             return
         }
+        // Recht gleich beim Oeffnen pruefen (Befund A37 0.1.8: die Karte fehlte)
+        if (!darfInstallieren()) rechtFehlt()
         a.sucht(true)
         Thread {
             val ergebnis = try { Result.success(RosenwegUpdater.verfuegbar(this)) } catch (e: Exception) { Result.failure(e) }
@@ -136,8 +146,8 @@ class UpdateActivity : Activity() {
         }
         a.kopf(if (l.size == 1) "Neue Fassung ${l[0].versionName}" else "${l.size} neue Fassungen",
             if (l.size == 1) l[0].name else "für Rosenweg-Apps auf diesem Handy")
-        if (!darfInstallieren()) rechtFehlt()
         a.hauptknopf(if (l.size == 1) "Installieren" else "Alle installieren") { starten() }
+        if (!darfInstallieren()) rechtFehlt()
     }
 
     private fun fassung(paket: String): String = RosenwegUpdater.info(this, paket)?.versionName ?: ""

@@ -45,8 +45,9 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
     enum class Zustand { WARTET, LAEDT, BESTAETIGEN, INSTALLIERT, FEHLER, AKTUELL }
 
     /** Eine Zeile je App. */
-    inner class Zeile(val paket: String, name: String, alt: String, neu: String, symbol: Drawable?) {
+    inner class Zeile(val paket: String, private val name: String, alt: String, neu: String, symbol: Drawable?) {
         val view: LinearLayout
+        private val fassungText = if (alt.isEmpty()) neu else "$alt → $neu"
         private val status: TextView
         private val balken: ProgressBar
 
@@ -90,6 +91,7 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
                 Zustand.AKTUELL -> "✓ Aktuell" to gut
             }
             status.text = t; status.setTextColor(farbe)
+            view.contentDescription = "$name, $fassungText, $t"
             balken.visibility = if (z == Zustand.LAEDT) View.VISIBLE else View.GONE
             balken.isIndeterminate = anteil == null
             if (anteil != null) balken.progress = (anteil * 1000).toInt()
@@ -107,11 +109,14 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
     val nebenKnopf: Button
     private val sucht: ProgressBar
     val zeilen = linkedMapOf<String, Zeile>()
+    private val kopf: LinearLayout
+    private val unten: LinearLayout
+    private val inhaltRand: LinearLayout
 
     init {
         titel = TextView(c).apply { textSize = 22f; setTypeface(typeface, Typeface.BOLD); setTextColor(0xFFFFFFFF.toInt()) }
         untertitel = TextView(c).apply { textSize = 15f; setTextColor(0xEEFFFFFF.toInt()) }
-        val kopf = LinearLayout(c).apply {
+        kopf = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(gruppe)
@@ -152,14 +157,14 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
         nebenKnopf = Button(c).apply {
             isAllCaps = false; textSize = 16f; setTextColor(gruppeSchrift); background = flaeche(0, gruppeSchrift, 28); visibility = View.GONE
         }
-        val unten = LinearLayout(c).apply {
+        unten = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(12), dp(20), dp(20))
             setBackgroundColor(grund)
             addView(knopf, LinearLayout.LayoutParams(MATCH_PARENT, dp(56)))
             addView(nebenKnopf, LinearLayout.LayoutParams(MATCH_PARENT, dp(48)).apply { topMargin = dp(10) })
         }
-        val inhalt = LinearLayout(c).apply {
+        inhaltRand = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
             addView(hinweis, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
@@ -171,12 +176,31 @@ class UpdateAnsicht(private val c: Context, private val dunkel: Boolean = istDun
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(grund)
             addView(kopf, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-            addView(ScrollView(c).apply { isFillViewport = true; addView(inhalt) }, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
+            addView(ScrollView(c).apply { isFillViewport = true; addView(inhaltRand) }, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
             addView(unten, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        }
+        randAnwenden()
+    }
+
+    /** Edge-to-edge (Android 15+, Befund A37 0.1.8): der farbige Kopf laeuft unter die
+     * Statusleiste, sein Inhalt beginnt darunter; unten Platz fuer Navigations-/Gestenleiste. */
+    private fun randAnwenden() {
+        wurzel.setOnApplyWindowInsetsListener { _, ins ->
+            val typ = android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout()
+            val r = if (android.os.Build.VERSION.SDK_INT >= 30) ins.getInsets(typ)
+            else @Suppress("DEPRECATION") android.graphics.Insets.of(ins.systemWindowInsetLeft, ins.systemWindowInsetTop,
+                ins.systemWindowInsetRight, ins.systemWindowInsetBottom)
+            kopf.setPadding(dp(20) + r.left, dp(20) + r.top, dp(20) + r.right, dp(20))
+            unten.setPadding(dp(20) + r.left, dp(12), dp(20) + r.right, dp(20) + r.bottom)
+            inhaltRand.setPadding(dp(16) + r.left, dp(16), dp(16) + r.right, dp(16))
+            ins
         }
     }
 
-    fun kopf(t: String, u: String) { titel.text = t; untertitel.text = u }
+    fun kopf(t: String, u: String) {
+        titel.text = t; untertitel.text = u
+        kopf.contentDescription = "Rosenweg-Updates. $t. $u"
+    }
 
     fun sucht(ja: Boolean) { sucht.visibility = if (ja) View.VISIBLE else View.GONE }
 
