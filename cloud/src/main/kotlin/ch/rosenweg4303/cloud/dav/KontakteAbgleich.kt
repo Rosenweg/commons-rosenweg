@@ -119,7 +119,8 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
     private fun abgleichenIntern(): Ergebnis {
         Log.i(TAG, "Abgleich Adressbuecher beginnt")
         kontoAnlegen()
-        val buecher = dav.sammlungen(NextcloudDav.Art.ADRESSEN)
+        // "Kürzlich kontaktiert" u.ae. nicht abgleichen (deren Kontakte verschwinden damit lokal)
+        val buecher = dav.sammlungen(NextcloudDav.Art.ADRESSEN).filter { KontakteAbbildung.abgleichen(it) }
         val (hoch, nachholen, konflikte) = hochladen(buecher)
         var n = 0; var weg = 0
         for (b in buecher) {
@@ -208,7 +209,7 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
     /** -> (hochgeladen, neu zu holende Adressen, Konflikte) */
     private fun hochladen(buecher: List<NextcloudDav.Sammlung>): Triple<Int, Set<String>, Int> {
         gruppenAenderungen()
-        val standard = buecher.firstOrNull { !it.nurLesen }
+        val standard = KontakteAbbildung.standardBuch(buecher)
         val nachholen = mutableSetOf<String>()
         var n = 0; var konflikte = 0
         cr.query(alsAdapter(RawContacts.CONTENT_URI),

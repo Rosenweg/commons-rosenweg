@@ -217,6 +217,25 @@ internal object KontakteAbbildung {
             kategorien.distinct(), bild?.let { Base64.getEncoder().encodeToString(it) }, unbekannt)
     }
 
+    /**
+     * Nicht abgleichen: Systembuecher der Nextcloud, die man nicht als Adressbuch fuehrt
+     * ("Kürzlich kontaktiert" der Contacts-Interaction-App).
+     */
+    fun abgleichen(b: NextcloudDav.Sammlung) = !b.url.trimEnd('/').substringAfterLast('/').startsWith("z-app-generated--")
+
+    /**
+     * Ziel fuer neue Kontakte (nicht von der Reihenfolge im PROPFIND abhaengig): das persoenliche
+     * Standardbuch der Nextcloud (".../contacts/"), sonst das erste eigene beschreibbare Buch.
+     * Nie ein geteiltes Buch ("*_shared_by_*") und nie ein Systembuch.
+     */
+    fun standardBuch(buecher: List<NextcloudDav.Sammlung>): NextcloudDav.Sammlung? {
+        val eigene = buecher.filter { b ->
+            val name = b.url.trimEnd('/').substringAfterLast('/')
+            !b.nurLesen && abgleichen(b) && !name.contains("_shared_by_")
+        }
+        return eigene.firstOrNull { it.url.trimEnd('/').substringAfterLast('/') == "contacts" } ?: eigene.firstOrNull()
+    }
+
     /** Android-Datum (JJJJ-MM-TT, --MM-TT, JJJJMMTT, auch mit Uhrzeit) vereinheitlichen. */
     fun datum(s: String): String? {
         val w = s.trim().substringBefore('T').substringBefore(' ')

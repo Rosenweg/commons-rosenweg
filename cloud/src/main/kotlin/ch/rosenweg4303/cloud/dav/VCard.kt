@@ -155,7 +155,7 @@ object VCard {
         val m = Zeilen::maskieren
         val z = mutableListOf("BEGIN:VCARD", "VERSION:3.0", "PRODID:-//Rosenweg 4303//Rosenweg-Apps//DE",
             "UID:${k.uid.ifEmpty { UUID.randomUUID().toString() }}",
-            "FN:${m(k.anzeigename)}", "N:${m(k.nachname)};${m(k.vorname)};${m(k.zweitname)};${m(k.praefix)};${m(k.suffix)}")
+            "FN:${m(anzeigename(k))}", "N:${m(k.nachname)};${m(k.vorname)};${m(k.zweitname)};${m(k.praefix)};${m(k.suffix)}")
         if (k.spitzname.isNotEmpty()) z.add("NICKNAME:${m(k.spitzname)}")
         if (k.firma.isNotEmpty() || k.abteilung.isNotEmpty()) z.add("ORG:${m(k.firma)}" + if (k.abteilung.isNotEmpty()) ";${m(k.abteilung)}" else "")
         if (k.position.isNotEmpty()) z.add("TITLE:${m(k.position)}")
@@ -186,6 +186,18 @@ object VCard {
         z.add("END:VCARD")
         return Zeilen.falten(z)
     }
+
+    /**
+     * FN darf in vCard 3.0 nicht leer sein (A37: Kontakt nur mit Telefonnummer ging mit "FN:" hoch).
+     * Rueckfall wie Androids display_name: Name, Firma, E-Mail, Telefonnummer, Spitzname.
+     */
+    internal fun anzeigename(k: VKontakt): String = k.anzeigename.trim()
+        .ifEmpty { listOf(k.praefix, k.vorname, k.zweitname, k.nachname, k.suffix).filter { it.isNotBlank() }.joinToString(" ") }
+        .ifEmpty { k.firma.trim() }
+        .ifEmpty { k.emails.firstOrNull { it.wert.isNotBlank() }?.wert?.trim().orEmpty() }
+        .ifEmpty { k.telefone.firstOrNull { it.wert.isNotBlank() }?.wert?.trim().orEmpty() }
+        .ifEmpty { k.spitzname.trim() }
+        .ifEmpty { "Kontakt" }
 
     /** vCard 3.0: Datum ohne Jahr wie Apple/Nextcloud mit X-APPLE-OMIT-YEAR. */
     private fun datumZeile(name: String, d: String) =
