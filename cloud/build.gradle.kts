@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("CLOUD_VERSION")?.toString() ?: "0.10.1"
+version = findProperty("CLOUD_VERSION")?.toString() ?: "0.11.0"
 
 android {
     namespace = "ch.rosenweg4303.cloud"

@@ -18,9 +18,12 @@ class FormateTest {
         assertEquals("Erika", k.vorname)
         assertEquals("Muster", k.nachname)
         assertEquals("Rosenweg, STWEG 3", k.firma)
-        assertEquals(listOf("cell" to "+41 79 000 00 00"), k.telefone)
-        assertEquals("erika@example.org", k.emails.single().second)
+        assertEquals(listOf(VEintrag(listOf("cell", "voice"), "+41 79 000 00 00")), k.telefone)
+        assertEquals("cell", k.telefone.single().typ)
+        assertEquals("erika@example.org", k.emails.single().wert)
+        assertEquals("work", k.emails.single().typ)
         assertEquals("Zeile 1\nZeile 2 mit langem Text, der gefaltet weitergeht", k.notiz)
+        assertEquals("Technik", k.abteilung)
         val zurueck = VCard.lesen(VCard.schreiben(k))!!
         assertEquals(k, zurueck)
     }
