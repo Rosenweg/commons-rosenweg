@@ -67,6 +67,8 @@ object RosenwegUpdater {
         // (rosenweg_basis). Immer HINTEN anhaengen: aeltere Apps kennen die neuen Namen nicht und
         // muessen trotzdem zur selben Wahl kommen.
         "ch.rosenweg4303.kiosk", "ch.rosenweg4303.vm", "ch.rosenweg4303.salz", "ch.rosenweg4303.profil",
+        // Rosenweg Mein Telefon (Flutter)
+        "ch.rosenweg4303.meintelefon",
     )
 
     internal val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
