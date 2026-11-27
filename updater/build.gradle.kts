@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("UPDATER_VERSION")?.toString() ?: "0.1.6"
+version = findProperty("UPDATER_VERSION")?.toString() ?: "0.1.7"
 
 android {
     namespace = "ch.rosenweg4303.updater"
