@@ -30,6 +30,8 @@
         <package android:name="ch.rosenweg4303.vm" />
         <package android:name="ch.rosenweg4303.salz" />
         <package android:name="ch.rosenweg4303.profil" />
+        <!-- Rosenweg Mein Telefon (Flutter, rosenweg_basis) -->
+        <package android:name="ch.rosenweg4303.meintelefon" />
     </queries>
 
     <application>
