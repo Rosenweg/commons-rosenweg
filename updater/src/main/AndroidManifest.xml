@@ -25,6 +25,11 @@
         <package android:name="ch.rosenweg4303.paint" />
         <package android:name="ch.rosenweg4303.messages" />
         <package android:name="ch.rosenweg4303.karten" />
+        <!-- seit 0.1.4: Rosenweg Kiosk (Android TV) und die Flutter-Apps (rosenweg_basis) -->
+        <package android:name="ch.rosenweg4303.kiosk" />
+        <package android:name="ch.rosenweg4303.vm" />
+        <package android:name="ch.rosenweg4303.salz" />
+        <package android:name="ch.rosenweg4303.profil" />
     </queries>
 
     <application>

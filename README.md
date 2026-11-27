@@ -27,7 +27,7 @@ Rosenweg Commons ist der Fork der Fossify Commons, gegen den alle Rosenweg-Fossi
 | `commons` | `org.fossify:commons` (`7.1.3-rosenweg.1`) | Fossify Commons ohne Spenden- und Social-Kanäle, für eigene Paketnamen `ch.rosenweg4303.*` |
 | `cloud` | `ch.rosenweg4303:cloud` (0.13.0) | Rosenweg-Nextcloud über WebDAV; Anmeldung (Anmeldeschirm mit Karte, Konto oder QR-Code, Rosenweg-Konto mit PKCE, Nextcloud-Login, Nextcloud-Zugang gleich nach der Anmeldung); Upload-Warteschlange (lokal gelöscht erst nach Bestätigung); eigene Dateien auflisten und streamen; Einstellungen pro Person in `Persönlich/.rosenweg/`; CalDAV und CardDAV ohne DAVx⁵ (ab 0.13.0 vollständig: WebDAV-Sync, Serien/Ausnahmen, Erinnerungen, Teilnehmer, Fotos, Gruppen, Hintergrund-Abgleich mit WorkManager, Konflikt-Protokoll); Einstellungsseite „Rosenweg-Nextcloud“ mit dem tatsächlichen Stand (`CloudStatus`). Bindet `updater` ein. |
 | `anmeldeschirm` | `ch.rosenweg4303:anmeldeschirm` (0.2.0) | Aussehen, Texte, Schritt-Zeilen und Kartenleser des Rosenweg-Anmeldeschirms – derselbe wie der Sperrbildschirm von Rosenweg Gerät. Ohne Netz, minSdk 21. |
-| `updater` | `ch.rosenweg4303:updater` (0.1.2) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
+| `updater` | `ch.rosenweg4303:updater` (0.1.4) | Rosenweg Updater: hält auf eigenen Handys alle Rosenweg-Apps aktuell |
 
 Auf geteilten Telefonen hat der Zugang von Rosenweg Gerät immer Vorrang.
 
@@ -89,6 +89,10 @@ Auf Handys ohne Rosenweg Gerät prüft genau eine installierte Rosenweg-App den 
 | Signatur | gleich der eigenen (Rosenweg-Schlüssel) |
 
 Android lässt jede Installation bestätigen. Auf geteilten Telefonen übernimmt Rosenweg Gerät.
+
+Welche App prüft: die erste installierte aus `RosenwegUpdater.ZUSTAENDIG` (mit Updater und Rosenweg-Signatur). Neue Apps kommen **hinten** an die Liste und in die `<queries>` des Manifests (seit 0.1.4: Kiosk, Virtuelle Computer, Salz, Profil). Ist keine App der Liste installiert, prüft eine App ausserhalb der Liste selbst. Die Flutter-Apps bekommen den Updater auf Android über `rosenweg_basis`; auf den Computern hat `rosenweg_basis` einen eigenen (Linux, macOS, Windows).
+
+Aus ist der Updater nur, wo andere aktualisieren: auf geteilten Telefonen (Rosenweg Gerät installiert aus dem Katalog) und – bei den Flutter-Apps – auf Rosenweg-Stationen (os-stationen).
 
 ## Aufbau
 
