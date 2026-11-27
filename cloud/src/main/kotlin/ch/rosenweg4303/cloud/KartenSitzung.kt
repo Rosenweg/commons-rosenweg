@@ -32,6 +32,11 @@ import java.util.concurrent.TimeUnit
  * 15 Minuten und liegt nur im Speicher; erneuern geht nur mit einer Unterschrift ueber eine
  * Herausforderung des Servers. Gespeichert wird nur die Sitzungs-Id (allein nutzlos). Die
  * Karten-UID wird nie gespeichert oder geloggt.
+ *
+ * Dritter Weg (Stefan 27.11.2026), wie "QR-Code scannen" am Sperrbildschirm: [anmeldenMitQr] loest
+ * einen Anmelde-QR ein, den das Portal (rosenweg4303.ch/smartphones, "App auf eigenem Handy") auf
+ * einem anderen Geraet zeigt, an dem die Person angemeldet ist. Danach ist es dieselbe Sitzung wie
+ * mit der Karte (Schluessel, Erneuern, Abmelden); der Server prueft dann statt der Karte das Konto.
  */
 object KartenSitzung {
     private const val TAG = "RosenwegKarte"
@@ -123,22 +128,34 @@ object KartenSitzung {
         }
     }
 
+    /** Praefix des Anmelde-QR fuer Apps (geteilte Telefone: "RWTEL1:", nicht austauschbar). */
+    const val QR_PRAEFIX = "RWAPP1:"
+    const val QR_PRAEFIX_TELEFON = "RWTEL1:"
+
     /**
      * Karte einloesen (blockierend, nicht im UI-Thread). Wirft [Fehler] mit Text fuer die Person.
      * Eine schon bestehende Karten-Sitzung dieser App wird am Server ersetzt.
      */
-    fun anmelden(c: Context, uid: String) {
+    fun anmelden(c: Context, uid: String) = sitzungHolen(c, "/api/apps/karte-anmelden", "uid", uid, "mit Karte")
+
+    /**
+     * Gescannten Anmelde-QR ("RWAPP1:...") einloesen (blockierend, nicht im UI-Thread). Der QR ist
+     * einmalig und kurz gueltig; wirft [Fehler] mit Text fuer die Person.
+     */
+    fun anmeldenMitQr(c: Context, inhalt: String) = sitzungHolen(c, "/api/apps/qr-anmelden", "token", inhalt, "mit QR-Code")
+
+    private fun sitzungHolen(c: Context, pfad: String, feld: String, wert: String, wie: String) {
         val alias = ALIAS_PRAEFIX + java.util.UUID.randomUUID().toString().replace("-", "")
         val schluessel = neuerSchluessel(alias)
         val body = JSONObject()
-            .put("uid", uid)
+            .put(feld, wert)
             .put("app", c.packageName)
             .put("app_name", appName(c))
             .put("schluessel", schluessel)
             .put("geraet", JSONObject().put("kennung", geraetKennung(c)).put("name", geraetName())
                 .put("plattform", "Android ${Build.VERSION.RELEASE}"))
         val (status, j) = try {
-            post("/api/apps/karte-anmelden", body)
+            post(pfad, body)
         } catch (e: java.io.IOException) {
             schluesselWeg(alias)
             throw Fehler("Keine Verbindung zum Rosenweg")
@@ -152,7 +169,7 @@ object KartenSitzung {
         prefs(c).edit().putString("sitzung", j.getString("sitzung")).putString("alias", alias)
             .putString("name", j.optString("name")).putString("email", j.optString("email")).apply()
         if (alt != alias) schluesselWeg(alt)   // die alte Sitzung hat der Server ersetzt
-        Log.i(TAG, "mit Karte angemeldet")
+        Log.i(TAG, "$wie angemeldet")
     }
 
     private fun uebernehmen(j: JSONObject) {

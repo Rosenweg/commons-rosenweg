@@ -10,6 +10,7 @@ import android.os.SystemClock
 import android.util.TypedValue
 import android.view.Gravity
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 
@@ -40,6 +41,9 @@ object AnmeldeOberflaeche {
     const val NFC_AUS = "NFC ist ausgeschaltet"
     const val NFC_EINSCHALTEN = "NFC einschalten"
     const val NOCHMALS = "bitte nochmals versuchen."
+    /** Dritter Weg wie am Sperrbildschirm: QR von rosenweg4303.ch/smartphones scannen. */
+    const val QR_KNOPF = "QR-Code scannen"
+    const val KAMERA_AUS = "Kamera aus"
 
     // ─── Schritte (Einrichtungsbildschirm beim An-/Abmelden) ────────────────
     const val LAEUFT = 0
@@ -71,6 +75,22 @@ object AnmeldeOberflaeche {
             cornerRadius = dp(c, 14f).toFloat()
             setStroke(maxOf(1, dp(c, 1.2f)), Color.WHITE)
         }
+    }
+
+    /**
+     * Rahmen fuer das Kamerabild beim QR-Scannen: schwarz, runde Ecken, blauer Rand (wie der
+     * Sperrbildschirm). Das Kamerabild kommt als Kind hinein (MATCH_PARENT).
+     */
+    @JvmStatic
+    fun kameraRahmen(c: Context): FrameLayout = FrameLayout(c).apply {
+        background = GradientDrawable().apply {
+            setColor(Color.BLACK)
+            cornerRadius = dp(c, 18f).toFloat()
+            setStroke(dp(c, 3f), Color.parseColor(KNOPF))
+        }
+        val r = dp(c, 3f)
+        setPadding(r, r, r, r)
+        clipToOutline = true
     }
 
     /** Rundes Rosenweg-Abzeichen (Turm, Weg, Rose). */

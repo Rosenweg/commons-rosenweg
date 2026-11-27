@@ -4,6 +4,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- WorkManager wartet auf Netz -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Anmeldeschirm: "QR-Code scannen" (gefragt wird erst beim Tippen); Handys ohne Kamera bleiben erlaubt -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <!-- Zugang der am geteilten Telefon angemeldeten Person von Rosenweg Gerät (nur Rosenweg-Signatur) -->
     <uses-permission android:name="ch.rosenweg4303.permission.ANLAGE" />
@@ -34,8 +38,8 @@
                 <data android:scheme="${applicationId}" />
             </intent-filter>
         </activity>
-        <!-- Gemeinsamer Anmeldeschirm (privates Handy): Karte oder Rosenweg-Konto, wie der
-             Sperrbildschirm der geteilten Telefone -->
+        <!-- Gemeinsamer Anmeldeschirm (privates Handy): Karte, Rosenweg-Konto oder QR-Code, wie
+             der Sperrbildschirm der geteilten Telefone -->
         <activity
             android:name="ch.rosenweg4303.cloud.RosenwegAnmeldeSchirm"
             android:exported="false"
