@@ -38,7 +38,7 @@ object CloudStatus {
         return if (z == 0L) null else Triple(z, p(c).getBoolean("ab_ok", true), p(c).getString("ab_text", "").orEmpty())
     }
 
-    /** "Angemeldet als Erika (Rosenweg-Karte)" / "... (über Rosenweg Gerät)" / "Nicht angemeldet". */
+    /** "Angemeldet als Erika (Rosenweg-Karte|QR-Code|Rosenweg-Konto)" / "... (über Rosenweg Gerät)" / "Nicht angemeldet". */
     fun anmeldung(c: Context): String {
         val konto = KontoSpeicher(c).laden()
         if (RosenwegAnmeldung.geraetDa(c)) {
@@ -47,7 +47,12 @@ object CloudStatus {
         }
         if (!RosenwegAnmeldung.angemeldet(c)) return "Nicht angemeldet"
         val wer = RosenwegAnmeldung.name(c)?.takeIf { it.isNotBlank() } ?: RosenwegAnmeldung.email(c) ?: "?"
-        return "Angemeldet als $wer (" + (if (RosenwegAnmeldung.mitKarte(c)) "Rosenweg-Karte" else "Rosenweg-Konto") + ")"
+        val wie = when {
+            !RosenwegAnmeldung.mitKarte(c) -> "Rosenweg-Konto"
+            KartenSitzung.weg(c) == "mit QR-Code" -> "QR-Code"
+            else -> "Rosenweg-Karte"
+        }
+        return "Angemeldet als $wer ($wie)"
     }
 
     /** "Nextcloud verbunden (stefan)" / "Nextcloud nicht verbunden: <Fehler>". */

@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "ch.rosenweg4303"
-version = findProperty("CLOUD_VERSION")?.toString() ?: "0.11.0"
+version = findProperty("CLOUD_VERSION")?.toString() ?: "0.13.0"
 
 android {
     namespace = "ch.rosenweg4303.cloud"
@@ -54,6 +54,10 @@ dependencies {
     api(project(":anmeldeschirm"))
     api(libs.okhttp)
     implementation(libs.androidx.work)
+    // QR-Code scannen im Anmeldeschirm: derselbe Scanner wie der Sperrbildschirm von Rosenweg
+    // Geraet (BarcodeView); ohne seine alten Abhaengigkeiten, zxing-core neuer
+    implementation(libs.zxing.embedded) { isTransitive = false }
+    implementation(libs.zxing.core)
     // vCard/iCalendar (dav/Formate.kt) ohne Android pruefen
     testImplementation("junit:junit:4.13.2")
 }
