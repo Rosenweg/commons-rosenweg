@@ -1,7 +1,5 @@
 package org.fossify.commons.compose.extensions
 
-import org.fossify.commons.helpers.Rosenweg
-
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
@@ -21,6 +19,7 @@ import org.fossify.commons.extensions.random
 import org.fossify.commons.extensions.showAutomaticSupportPromptIfEligible
 import org.fossify.commons.extensions.toggleAppIconColor
 import org.fossify.commons.extensions.updateSDCardPath
+import org.fossify.commons.helpers.Rosenweg
 import org.fossify.commons.helpers.isOreoMr1Plus
 import org.fossify.commons.models.Release
 

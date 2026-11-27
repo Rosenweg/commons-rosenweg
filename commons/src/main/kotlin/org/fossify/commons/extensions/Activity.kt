@@ -1,7 +1,5 @@
 package org.fossify.commons.extensions
 
-import org.fossify.commons.helpers.Rosenweg
-
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
@@ -71,6 +69,7 @@ import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.REAL_FILE_PATH
 import org.fossify.commons.helpers.REQUEST_EDIT_IMAGE
 import org.fossify.commons.helpers.REQUEST_SET_AS
+import org.fossify.commons.helpers.Rosenweg
 import org.fossify.commons.helpers.SIDELOADING_FALSE
 import org.fossify.commons.helpers.SIDELOADING_TRUE
 import org.fossify.commons.helpers.SILENT
