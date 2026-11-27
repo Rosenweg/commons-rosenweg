@@ -19,6 +19,7 @@ import org.fossify.commons.helpers.FONT_TYPE_SYSTEM_DEFAULT
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.MyContentProvider
 import org.fossify.commons.helpers.MyContentProvider.GLOBAL_THEME_SYSTEM
+import org.fossify.commons.helpers.Rosenweg
 import org.fossify.commons.helpers.appIconColorStrings
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isSPlus
@@ -257,6 +258,8 @@ fun Context.ensureFontPresentLocally(fontName: String): Boolean {
 }
 
 fun Context.checkAppIconColor() {
+    // Rosenweg: festes Symbol, Aliase nie umschalten (siehe Rosenweg.festesSymbol)
+    if (Rosenweg.festesSymbol(packageName)) return
     val appId = baseConfig.appId
     if (appId.isNotEmpty() && baseConfig.lastIconColor != baseConfig.appIconColor) {
         getAppIconColors().forEachIndexed { index, color ->

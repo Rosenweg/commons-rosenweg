@@ -555,6 +555,8 @@ class CustomizationActivity : BaseSimpleActivity() {
 
         handleAccentColorLayout()
         binding.applyToAllHolder.setOnClickListener { applyToAll() }
+        // Rosenweg: festes Symbol, daher keine Auswahl der Symbolfarbe
+        binding.customizationAppIconColorHolder.beVisibleIf(!Rosenweg.festesSymbol(packageName))
         binding.customizationAppIconColorHolder.setOnClickListener {
             if (baseConfig.wasAppIconCustomizationWarningShown) {
                 pickAppIconColor()

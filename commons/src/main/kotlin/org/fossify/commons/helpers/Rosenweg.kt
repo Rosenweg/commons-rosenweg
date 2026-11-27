@@ -18,6 +18,15 @@ object Rosenweg {
         return p.startsWith(PRAEFIX, true) || p.startsWith("org.fossify.", true)
     }
 
+    /**
+     * Hat die App ein festes Rosenweg-Symbol (Paket ch.rosenweg4303.*)? Dann gibt es keine
+     * Auswahl der Symbolfarbe: alle 18 Fossify-Farbvarianten (ic_launcher_red …) zeigen in den
+     * Apps auf dasselbe Rosenweg-Logo, ein Wechsel wuerde nur den Aktivitaets-Alias umschalten,
+     * und dabei kann das Symbol vom Startbildschirm verschwinden (Fossify-Warnung
+     * app_icon_color_warning). Original-Fossify-Apps (org.fossify.*) behalten die Auswahl.
+     */
+    fun festesSymbol(paket: String?) = paket?.startsWith(PRAEFIX, true) == true
+
     /** Paketname einer Schwester-App, z.B. paket("contacts") -> ch.rosenweg4303.contacts */
     fun paket(app: String, debug: Boolean = false) = PRAEFIX + app + if (debug) ".debug" else ""
 
