@@ -35,21 +35,47 @@ class UpdateActivity : Activity() {
         status = TextView(this).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f) }
         liste = TextView(this).apply { setPadding(0, dp(12), 0, dp(24)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f) }
         knopf = Button(this).apply { text = "Installieren"; isEnabled = false; setOnClickListener { starten() } }
-        setContentView(ScrollView(this).apply {
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.TOP
-                setPadding(rand, rand, rand, rand)
-                addView(status); addView(liste); addView(knopf)
+        // 0.1.7: Status fest oben, nur Liste und Knopf scrollen (vorher scrollte die Ueberschrift
+        // "7 Rosenweg-Apps haben eine neue Fassung" aus dem Bild, Test A37 27.11.2026)
+        setContentView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.TOP
+            setPadding(rand, rand, rand, 0)
+            addView(status)
+            addView(ScrollView(context).apply {
+                isFocusable = false
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(0, 0, 0, rand)
+                    addView(liste); addView(knopf)
+                })
             })
         })
-        laden()
+        if (laeuft) zeigeLaufend() else laden()
     }
 
     override fun onResume() {
         super.onResume()
-        // zurueck aus "Unbekannte Apps installieren" oder nach einer Installation
-        if (warteschlange.isNotEmpty() && packageManager.canRequestPackageInstalls() && !laeuft) naechste()
+        when {
+            // zurueck aus "Unbekannte Apps installieren": jetzt anfangen
+            !laeuft && warteschlange.isNotEmpty() && packageManager.canRequestPackageInstalls() -> naechste()
+            // eine Installation wartet auf Bestaetigung (Dialog weggewischt, Seite neu geoeffnet)
+            laeuft -> zeigeLaufend()
+        }
+    }
+
+    /** Eine Installation laeuft schon (auch aus einer frueheren Instanz dieser Seite). */
+    private fun zeigeLaufend() {
+        val u = aktuell ?: return
+        status.text = "${u.name}: installieren …"
+        liste.text = warteschlange.joinToString("\n") { "• ${it.name}  ${it.versionName}" }
+        val offen = offeneBestaetigung
+        if (offen != null) {
+            knopf.text = "Installation fortsetzen"; knopf.isEnabled = true
+            knopf.setOnClickListener { bestaetigungZeigen(this, offen) }
+        } else {
+            knopf.text = "Bitte warten …"; knopf.isEnabled = false
+        }
     }
 
     /** Prüfen und das Ergebnis zeigen (auch für "Nach Updates suchen" aus den Einstellungen). */
@@ -110,6 +136,7 @@ class UpdateActivity : Activity() {
     }
 
     private fun starten() {
+        if (laeuft) { zeigeLaufend(); return }   // nie zwei Installationen gleichzeitig (Befund A37)
         // die eigene App zuletzt: ihr Update beendet diesen Prozess
         warteschlange.clear(); warteschlange.addAll(updates.sortedBy { it.paket == packageName })
         knopf.isEnabled = false
@@ -123,9 +150,10 @@ class UpdateActivity : Activity() {
 
     private fun naechste() {
         val u = warteschlange.firstOrNull()
-        if (u == null) { laeuft = false; laden(); return }
-        laeuft = true
+        if (u == null) { aktuell = null; laden(); return }
+        aktuell = u; aktuelleSession = -1; offeneBestaetigung = null
         status.text = "${u.name}: lade …"
+        knopf.text = "Bitte warten …"; knopf.isEnabled = false
         Thread {
             try {
                 val f = RosenwegUpdater.laden(this, u)
@@ -134,7 +162,7 @@ class UpdateActivity : Activity() {
             } catch (e: Exception) {
                 runOnUiThread {
                     status.text = "${u.name}: ${RosenwegUpdater.klartext(e)}"
-                    warteschlange.removeAt(0); laeuft = false
+                    warteschlange.remove(u); aktuell = null
                     knopf.text = "Nochmals versuchen"; knopf.isEnabled = true; knopf.setOnClickListener { laden() }
                 }
             }
@@ -148,22 +176,28 @@ class UpdateActivity : Activity() {
             if (android.os.Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
         }
         val id = pi.createSession(p)
-        pi.openSession(id).use { s ->
-            f.inputStream().use { inp -> s.openWrite("apk", 0, f.length()).use { out -> inp.copyTo(out); s.fsync(out) } }
-            val rueck = PendingIntent.getBroadcast(this, id, Intent(this, InstallStatus::class.java).putExtra("paket", u.paket),
-                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            s.commit(rueck.intentSender)
+        aktuelleSession = id
+        try {
+            pi.openSession(id).use { s ->
+                f.inputStream().use { inp -> s.openWrite("apk", 0, f.length()).use { out -> inp.copyTo(out); s.fsync(out) } }
+                val rueck = PendingIntent.getBroadcast(this, id, Intent(this, InstallStatus::class.java).putExtra("paket", u.paket),
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+                s.commit(rueck.intentSender)
+            }
+        } finally {
+            f.delete()
         }
-        f.delete()
     }
 
-    /** Von InstallStatus: eine Installation ist fertig (oder abgebrochen). */
-    internal fun fertig(paket: String, ok: Boolean, meldung: String?) {
-        val u = warteschlange.firstOrNull { it.paket == paket } ?: return
-        warteschlange.remove(u)
+    /** Von InstallStatus: die laufende Installation ist fertig (oder abgebrochen). */
+    internal fun fertig(u: RosenwegUpdater.Update, ok: Boolean, meldung: String?) {
         status.text = if (ok) "${u.name}: aktualisiert" else "${u.name}: ${meldung ?: "nicht installiert"}"
-        laeuft = false
-        naechste()
+        if (ok) naechste() else {
+            // abgebrochen: nicht einfach weitermachen, die Person entscheidet
+            knopf.text = if (warteschlange.isEmpty()) "Nochmals suchen" else "Weiter installieren"
+            knopf.isEnabled = true
+            knopf.setOnClickListener { if (warteschlange.isEmpty()) laden() else naechste() }
+        }
     }
 
     override fun onStart() { super.onStart(); aktiv = this }
@@ -173,7 +207,39 @@ class UpdateActivity : Activity() {
 
     companion object {
         internal val warteschlange = mutableListOf<RosenwegUpdater.Update>()
-        internal var laeuft = false
+
+        /** Die App, die gerade installiert wird, und ihre Session (0.1.7: Ergebnisse anderer
+         * Sessions zaehlen nicht - vorher verschob ein doppeltes Telefon-Ergebnis die
+         * Warteschlange und die Bestaetigung fuer Kontakte ging verloren, Test A37 27.11.2026). */
+        internal var aktuell: RosenwegUpdater.Update? = null
+        @Volatile internal var aktuelleSession = -1
+
+        /** Bestaetigung des Android-Installers, die noch offen ist (fuer "Installation fortsetzen"). */
+        internal var offeneBestaetigung: Intent? = null
+        internal val laeuft: Boolean get() = aktuell != null
+
+        internal fun bestaetigungZeigen(c: android.content.Context, i: Intent) {
+            try {
+                c.startActivity(Intent(i).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) {
+                android.util.Log.w(RosenwegUpdater.TAG, "Bestaetigung: ${e.javaClass.simpleName}")
+            }
+        }
+
+        /** Von InstallStatus. Nur die laufende Session zaehlt. */
+        internal fun ergebnis(c: android.content.Context, session: Int, ok: Boolean, meldung: String?) {
+            val u = aktuell
+            if (u == null || session != aktuelleSession) {
+                android.util.Log.i(RosenwegUpdater.TAG, "Ergebnis fuer fremde Session $session ignoriert")
+                return
+            }
+            warteschlange.remove(u)
+            aktuell = null; aktuelleSession = -1; offeneBestaetigung = null
+            val a = aktiv
+            if (a != null && !a.isFinishing) a.fertig(u, ok, meldung)
+            // ohne sichtbare Seite: beim naechsten Oeffnen (onResume) geht es weiter
+        }
+
         // Nur schwach gehalten (InstallStatus meldet an die sichtbare Activity), damit keine
         // beendete Activity im Speicher haengen bleibt.
         private var aktivRef: WeakReference<UpdateActivity>? = null
