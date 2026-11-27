@@ -114,6 +114,7 @@ class KontakteAbgleich(private val c: Context, konto: Konto, appName: String, pr
     }
 
     private fun abgleichenIntern(): Ergebnis {
+        Log.i(TAG, "Abgleich Adressbuecher beginnt")
         kontoAnlegen()
         val buecher = dav.sammlungen(NextcloudDav.Art.ADRESSEN)
         val (hoch, nachholen, konflikte) = hochladen(buecher)

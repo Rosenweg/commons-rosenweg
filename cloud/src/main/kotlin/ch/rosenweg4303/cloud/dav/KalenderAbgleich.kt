@@ -130,6 +130,7 @@ class KalenderAbgleich(private val c: Context, konto: Konto, appName: String, he
     }
 
     private fun abgleichenIntern(): Ergebnis {
+        Log.i(TAG, "Abgleich Kalender beginnt")
         val server = dav.sammlungen(NextcloudDav.Art.KALENDER)
         val adresse = eigeneAdresse()
         farbenEinrichten()
