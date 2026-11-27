@@ -32,6 +32,14 @@
         <package android:name="ch.rosenweg4303.profil" />
         <!-- Rosenweg Mein Telefon (Flutter, rosenweg_basis) -->
         <package android:name="ch.rosenweg4303.meintelefon" />
+        <!-- 0.1.8 -->
+        <package android:name="ch.rosenweg4303.zutritt" />
+        <package android:name="ch.rosenweg4303.waschkueche" />
+        <package android:name="ch.rosenweg4303.reparatur" />
+        <!-- 0.1.8: jede App mit diesem Modul, ohne Liste (RosenwegAppKennung) -->
+        <intent>
+            <action android:name="ch.rosenweg4303.ROSENWEG_APP" />
+        </intent>
     </queries>
 
     <application>
@@ -44,6 +52,16 @@
         <receiver
             android:name="ch.rosenweg4303.updater.InstallStatus"
             android:exported="false" />
+        <!-- Kennung fuer andere Rosenweg-Apps (Sichtbarkeit ueber <queries><intent>). Tut nichts;
+             INSTALL_PACKAGES hat nur das System, also kann niemand sie ausloesen. -->
+        <receiver
+            android:name="ch.rosenweg4303.updater.RosenwegAppKennung"
+            android:exported="true"
+            android:permission="android.permission.INSTALL_PACKAGES">
+            <intent-filter>
+                <action android:name="ch.rosenweg4303.ROSENWEG_APP" />
+            </intent-filter>
+        </receiver>
         <provider
             android:name="ch.rosenweg4303.updater.UpdaterStart"
             android:authorities="${applicationId}.rosenweg.updater"
