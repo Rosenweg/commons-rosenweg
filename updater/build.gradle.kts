@@ -24,6 +24,9 @@ android {
     publishing {
         singleVariant("release") {}
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     compileOptions {
         val v = JavaVersion.valueOf(libs.versions.app.build.javaVersion.get())
         sourceCompatibility = v
@@ -49,4 +52,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.work)
     testImplementation("junit:junit:4.13.2")
+    // Vorschaubild der Update-Seite (UpdateSeiteBildTest, nur mit RW_BILDER=<ordner>)
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.test:core:1.7.0")
 }

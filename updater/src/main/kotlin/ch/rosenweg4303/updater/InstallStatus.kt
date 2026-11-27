@@ -22,8 +22,7 @@ class InstallStatus : BroadcastReceiver() {
                     try { c.packageManager.packageInstaller.abandonSession(session) } catch (e: Exception) { /* schon weg */ }
                     return
                 }
-                UpdateActivity.offeneBestaetigung = bestaetigen
-                bestaetigen?.let { UpdateActivity.bestaetigungZeigen(c, it) }
+                bestaetigen?.let { UpdateActivity.bestaetigungOffen(c, it) }
             }
             PackageInstaller.STATUS_SUCCESS -> {
                 Log.i(RosenwegUpdater.TAG, "$paket aktualisiert (Session $session)")
@@ -32,7 +31,26 @@ class InstallStatus : BroadcastReceiver() {
             else -> {
                 val m = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                 Log.w(RosenwegUpdater.TAG, "$paket: Status $st $m (Session $session)")
-                UpdateActivity.ergebnis(c, session, false, if (st == PackageInstaller.STATUS_FAILURE_ABORTED) "abgebrochen" else m)
+                UpdateActivity.ergebnis(c, session, false, fehlerText(st, m))
+            }
+        }
+    }
+
+    companion object {
+        const val PLAY_PROTECT = "Google Play Protect hat die Installation verhindert. Beim nächsten Versuch im " +
+            "Fenster von Play Protect „Mehr Details“ › „Trotzdem installieren“ wählen."
+
+        /** Status des Android-Installers -> Satz fuer die Person (0.1.8, Befund A37: Salz wurde von
+         * Play Protect abgelehnt, Status 3 mit INSTALL_FAILED_VERIFICATION_FAILURE). */
+        fun fehlerText(status: Int, meldung: String?): String {
+            val m = meldung.orEmpty()
+            return when {
+                m.contains("VERIFICATION", ignoreCase = true) || status == PackageInstaller.STATUS_FAILURE_BLOCKED -> PLAY_PROTECT
+                status == PackageInstaller.STATUS_FAILURE_ABORTED -> "Abgebrochen"
+                status == PackageInstaller.STATUS_FAILURE_STORAGE -> "Zu wenig Speicher auf dem Handy"
+                status == PackageInstaller.STATUS_FAILURE_CONFLICT -> "Passt nicht zur installierten Fassung (Konflikt)"
+                status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "Passt nicht zu diesem Handy"
+                else -> m.ifEmpty { "Nicht installiert (Status $status)" }
             }
         }
     }

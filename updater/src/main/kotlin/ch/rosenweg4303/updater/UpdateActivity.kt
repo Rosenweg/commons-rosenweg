@@ -2,168 +2,185 @@ package ch.rosenweg4303.updater
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.util.TypedValue
-import android.view.Gravity
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import java.io.File
 import java.lang.ref.WeakReference
 
 /**
- * "Nach Updates suchen" ([RosenwegUpdater.jetztPruefen]) und Ziel der Meldung: prüft sofort und
- * zeigt "Aktuell", "Neue Fassung X - Installieren" oder den Fehler im Klartext. Laedt und prueft eine APK nach der anderen und
- * uebergibt sie dem Android-Installer; Android fragt pro App nach. Die naechste kommt, wenn
- * InstallStatus das Ergebnis der vorigen meldet.
+ * Seite "Rosenweg-Updates": "Nach Updates suchen" ([RosenwegUpdater.jetztPruefen]) und Ziel der
+ * Meldungen. Prueft sofort und zeigt je App eine Zeile ("Aktuell", "Neue Fassung X -
+ * Installieren", Fehler im Klartext). Laedt und prueft eine APK nach der anderen und uebergibt
+ * sie dem Android-Installer; Android fragt pro App nach. Aussehen: [UpdateAnsicht].
+ *
+ * 0.1.8 (Stefan 27.11.2026):
+ * - Recht "Apps aus dieser Quelle installieren" VOR dem Installieren pruefen: Hinweis mit
+ *   "Erlauben", beim Zurueckkehren erneut pruefen und automatisch weitermachen.
+ * - Wartet eine Bestaetigung, steht eine Benachrichtigung da, die direkt zu ihr fuehrt.
  */
 class UpdateActivity : Activity() {
-    private lateinit var status: TextView
-    private lateinit var liste: TextView
-    private lateinit var knopf: Button
+    private lateinit var a: UpdateAnsicht
     private var updates: List<RosenwegUpdater.Update> = emptyList()
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
-        title = "Rosenweg-Updates"
-        val rand = dp(24)
-        status = TextView(this).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f) }
-        liste = TextView(this).apply { setPadding(0, dp(12), 0, dp(24)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f) }
-        knopf = Button(this).apply { text = "Installieren"; isEnabled = false; setOnClickListener { starten() } }
-        // 0.1.7: Status fest oben, nur Liste und Knopf scrollen (vorher scrollte die Ueberschrift
-        // "7 Rosenweg-Apps haben eine neue Fassung" aus dem Bild, Test A37 27.11.2026)
-        setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.TOP
-            setPadding(rand, rand, rand, 0)
-            addView(status)
-            addView(ScrollView(context).apply {
-                isFocusable = false
-                addView(LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(0, 0, 0, rand)
-                    addView(liste); addView(knopf)
-                })
-            })
-        })
+        a = UpdateAnsicht(this)
+        setContentView(a.wurzel)
         if (laeuft) zeigeLaufend() else laden()
+        fortsetzenAusMeldung(intent)
+    }
+
+    override fun onNewIntent(i: Intent) {
+        super.onNewIntent(i)
+        setIntent(i)
+        fortsetzenAusMeldung(i)
+    }
+
+    /** Aus der Benachrichtigung "wartet auf Bestaetigung": die offene Bestaetigung gleich zeigen. */
+    private fun fortsetzenAusMeldung(i: Intent?) {
+        if (i?.getBooleanExtra(EXTRA_FORTSETZEN, false) != true) return
+        i.removeExtra(EXTRA_FORTSETZEN)
+        offeneBestaetigung?.let { bestaetigungZeigen(this, it) }
     }
 
     override fun onResume() {
         super.onResume()
         when {
-            // zurueck aus "Unbekannte Apps installieren": jetzt anfangen
-            !laeuft && warteschlange.isNotEmpty() && packageManager.canRequestPackageInstalls() -> naechste()
-            // eine Installation wartet auf Bestaetigung (Dialog weggewischt, Seite neu geoeffnet)
+            // zurueck aus "Apps aus dieser Quelle installieren": erneut pruefen, dann weiter
+            wartetAufRecht && darfInstallieren() -> { wartetAufRecht = false; a.hinweis(null); naechste() }
+            wartetAufRecht -> rechtFehlt()
+            !laeuft && warteschlange.isNotEmpty() && darfInstallieren() -> naechste()
             laeuft -> zeigeLaufend()
+        }
+    }
+
+    private fun darfInstallieren() = packageManager.canRequestPackageInstalls()
+
+    /** Ohne das Recht nicht ins Leere laufen: klarer Hinweis mit "Erlauben". */
+    private fun rechtFehlt() {
+        a.hinweis("Damit Rosenweg-Apps Updates installieren dürfen, einmal „Apps aus dieser Quelle zulassen“ " +
+            "einschalten und dann zurück tippen – es geht danach von selbst weiter.", "Erlauben") { erlauben() }
+        a.hauptknopf("Erlauben") { erlauben() }
+    }
+
+    private fun erlauben() {
+        wartetAufRecht = true
+        try {
+            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+        } catch (e: Exception) {
+            a.hinweis("Die Einstellung liess sich nicht öffnen. Bitte unter Einstellungen › Apps › " +
+                "${applicationInfo.loadLabel(packageManager)} › „Unbekannte Apps installieren“ erlauben.")
         }
     }
 
     /** Eine Installation laeuft schon (auch aus einer frueheren Instanz dieser Seite). */
     private fun zeigeLaufend() {
         val u = aktuell ?: return
-        status.text = "${u.name}: installieren …"
-        liste.text = warteschlange.joinToString("\n") { "• ${it.name}  ${it.versionName}" }
+        if (a.zeilen.isEmpty()) {
+            updates = (listOf(u) + warteschlange).distinctBy { it.paket }
+            a.zeilenSetzen(updates.map { zeile(it) })
+        }
+        a.kopf("Installiert …", u.name)
         val offen = offeneBestaetigung
         if (offen != null) {
-            knopf.text = "Installation fortsetzen"; knopf.isEnabled = true
-            knopf.setOnClickListener { bestaetigungZeigen(this, offen) }
+            a.zeilen[u.paket]?.setzen(UpdateAnsicht.Zustand.BESTAETIGEN)
+            a.hauptknopf("Installation fortsetzen") { bestaetigungZeigen(this, offen) }
         } else {
-            knopf.text = "Bitte warten …"; knopf.isEnabled = false
+            a.zeilen[u.paket]?.setzen(UpdateAnsicht.Zustand.LAEDT)
+            a.hauptknopf("Bitte warten …", aktiv = false)
         }
     }
 
-    /** Prüfen und das Ergebnis zeigen (auch für "Nach Updates suchen" aus den Einstellungen). */
+    /** Prüfen und das Ergebnis zeigen. */
     private fun laden() {
-        status.text = "Suche Updates …"
-        liste.text = eigeneFassung()
-        knopf.isEnabled = false
-        knopf.text = "Bitte warten …"
-        knopf.setOnClickListener { starten() }
+        a.kopf("Suche Updates …", eigeneFassung())
+        a.zeilenSetzen(emptyList()); a.hinweis(null); a.nebenknopf(null)
+        a.hauptknopf("Bitte warten …", aktiv = false)
         if (RosenwegUpdater.geraetDa(this)) {
-            status.text = "Auf diesem Telefon hält Rosenweg Gerät alle Rosenweg-Apps aktuell."
-            knopf.text = "Schliessen"; knopf.isEnabled = true; knopf.setOnClickListener { finish() }
+            a.kopf("Alles im Griff", "Auf diesem Telefon hält Rosenweg Gerät alle Rosenweg-Apps aktuell.")
+            a.hauptknopf("Schliessen") { finish() }
             Thread { RosenwegUpdater.standMelden(this, null) }.start()
             return
         }
+        a.sucht(true)
         Thread {
             val ergebnis = try { Result.success(RosenwegUpdater.verfuegbar(this)) } catch (e: Exception) { Result.failure(e) }
             runOnUiThread { zeigen(ergebnis) }
         }.start()
     }
 
+    private fun zeile(u: RosenwegUpdater.Update) = a.Zeile(u.paket, u.name, fassung(u.paket), u.versionName, symbol(u.paket))
+
     private fun zeigen(ergebnis: Result<List<RosenwegUpdater.Update>>) {
         if (isFinishing) return
+        a.sucht(false)
         val l = ergebnis.getOrElse { e ->
-            status.text = RosenwegUpdater.klartext(e)
-            knopf.text = "Nochmals versuchen"; knopf.isEnabled = true; knopf.setOnClickListener { laden() }
+            a.kopf("Keine Verbindung", eigeneFassung())
+            a.hinweis(RosenwegUpdater.klartext(e))
+            a.hauptknopf("Nochmals versuchen") { laden() }
             return
         }
         updates = l
-        knopf.setOnClickListener { starten() }
-        when (l.size) {
-            0 -> {
-                status.text = "Aktuell: alle Rosenweg-Apps auf diesem Handy sind auf dem neuesten Stand."
-                RosenwegUpdater.abmelden(this)
-                liste.text = eigeneFassung()
-                knopf.text = "Schliessen"; knopf.isEnabled = true; knopf.setOnClickListener { finish() }
-            }
-            1 -> {
-                val u = l[0]
-                status.text = "Neue Fassung ${u.versionName} für ${u.name}"
-                liste.text = "Installiert ist ${fassung(u.paket)}."
-                knopf.text = "Installieren"; knopf.isEnabled = true
-            }
-            else -> {
-                status.text = "${l.size} Rosenweg-Apps haben eine neue Fassung"
-                liste.text = l.joinToString("\n") { "• ${it.name}  ${fassung(it.paket)} → ${it.versionName}" }
-                knopf.text = "Alle installieren"; knopf.isEnabled = true
-            }
+        a.zeilenSetzen(l.map { zeile(it) })
+        if (l.isEmpty()) {
+            a.kopf("Alles aktuell", "Alle Rosenweg-Apps auf diesem Handy sind auf dem neuesten Stand.")
+            RosenwegUpdater.abmelden(this)
+            a.zeilenSetzen(listOf(a.Zeile(packageName, applicationInfo.loadLabel(packageManager).toString(), "",
+                fassung(packageName), symbol(packageName)).also { it.setzen(UpdateAnsicht.Zustand.AKTUELL) }))
+            a.hauptknopf("Schliessen") { finish() }
+            return
         }
+        a.kopf(if (l.size == 1) "Neue Fassung ${l[0].versionName}" else "${l.size} neue Fassungen",
+            if (l.size == 1) l[0].name else "für Rosenweg-Apps auf diesem Handy")
+        if (!darfInstallieren()) rechtFehlt()
+        a.hauptknopf(if (l.size == 1) "Installieren" else "Alle installieren") { starten() }
     }
 
-    private fun fassung(paket: String): String =
-        RosenwegUpdater.info(this, paket)?.versionName ?: "?"
+    private fun fassung(paket: String): String = RosenwegUpdater.info(this, paket)?.versionName ?: ""
 
-    private fun eigeneFassung(): String {
-        val name = applicationInfo.loadLabel(packageManager)
-        return "$name ${fassung(packageName)}"
-    }
+    private fun symbol(paket: String) = try { packageManager.getApplicationIcon(paket) } catch (e: Exception) { null }
+
+    private fun eigeneFassung() = "${applicationInfo.loadLabel(packageManager)} ${fassung(packageName)}"
 
     private fun starten() {
         if (laeuft) { zeigeLaufend(); return }   // nie zwei Installationen gleichzeitig (Befund A37)
         // die eigene App zuletzt: ihr Update beendet diesen Prozess
         warteschlange.clear(); warteschlange.addAll(updates.sortedBy { it.paket == packageName })
-        knopf.isEnabled = false
-        if (!packageManager.canRequestPackageInstalls()) {
-            status.text = "Einmal erlauben: „Apps aus dieser Quelle installieren“, dann zurück."
-            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
-            return
-        }
+        if (!darfInstallieren()) { rechtFehlt(); erlauben(); return }
         naechste()
     }
 
     private fun naechste() {
         val u = warteschlange.firstOrNull()
-        if (u == null) { aktuell = null; laden(); return }
+        if (u == null) {
+            aktuell = null
+            a.kopf("Fertig", "Alle Updates sind installiert.")
+            a.hauptknopf("Nochmals suchen") { laden() }
+            a.nebenknopf("Schliessen") { finish() }
+            return
+        }
         aktuell = u; aktuelleSession = -1; offeneBestaetigung = null
-        status.text = "${u.name}: lade …"
-        knopf.text = "Bitte warten …"; knopf.isEnabled = false
+        if (a.zeilen[u.paket] == null) a.zeilenSetzen(updates.map { zeile(it) })
+        a.kopf("Installiert …", u.name)
+        a.hauptknopf("Bitte warten …", aktiv = false); a.nebenknopf(null)
+        val z = a.zeilen[u.paket]
+        z?.setzen(UpdateAnsicht.Zustand.LAEDT, anteil = 0f)
         Thread {
             try {
-                val f = RosenwegUpdater.laden(this, u)
-                runOnUiThread { status.text = "${u.name}: installieren …" }
+                val f = RosenwegUpdater.laden(this, u) { x -> runOnUiThread { z?.setzen(UpdateAnsicht.Zustand.LAEDT, anteil = x) } }
+                runOnUiThread { z?.setzen(UpdateAnsicht.Zustand.BESTAETIGEN) }
                 installieren(f, u)
             } catch (e: Exception) {
                 runOnUiThread {
-                    status.text = "${u.name}: ${RosenwegUpdater.klartext(e)}"
+                    z?.setzen(UpdateAnsicht.Zustand.FEHLER, RosenwegUpdater.klartext(e))
                     warteschlange.remove(u); aktuell = null
-                    knopf.text = "Nochmals versuchen"; knopf.isEnabled = true; knopf.setOnClickListener { laden() }
+                    a.hauptknopf(if (warteschlange.isEmpty()) "Nochmals suchen" else "Weiter installieren") {
+                        if (warteschlange.isEmpty()) laden() else naechste()
+                    }
                 }
             }
         }.start()
@@ -191,21 +208,28 @@ class UpdateActivity : Activity() {
 
     /** Von InstallStatus: die laufende Installation ist fertig (oder abgebrochen). */
     internal fun fertig(u: RosenwegUpdater.Update, ok: Boolean, meldung: String?) {
-        status.text = if (ok) "${u.name}: aktualisiert" else "${u.name}: ${meldung ?: "nicht installiert"}"
-        if (ok) naechste() else {
-            // abgebrochen: nicht einfach weitermachen, die Person entscheidet
-            knopf.text = if (warteschlange.isEmpty()) "Nochmals suchen" else "Weiter installieren"
-            knopf.isEnabled = true
-            knopf.setOnClickListener { if (warteschlange.isEmpty()) laden() else naechste() }
+        val z = a.zeilen[u.paket]
+        if (ok) {
+            z?.setzen(UpdateAnsicht.Zustand.INSTALLIERT)
+            naechste()
+        } else {
+            // nicht still weiterspringen: Hinweis, "Nochmals versuchen" (diese App) oder weiter
+            z?.setzen(UpdateAnsicht.Zustand.FEHLER, if (meldung == InstallStatus.PLAY_PROTECT) "Von Play Protect verhindert" else meldung)
+            a.kopf(if (meldung == InstallStatus.PLAY_PROTECT) "Play Protect" else "Nicht installiert", u.name)
+            a.hinweis("${u.name}: ${meldung ?: "nicht installiert"}")
+            a.hauptknopf("Nochmals versuchen") { a.hinweis(null); warteschlange.add(0, u); naechste() }
+            a.nebenknopf(if (warteschlange.isEmpty()) "Schliessen" else "Überspringen, weiter installieren") {
+                a.hinweis(null); if (warteschlange.isEmpty()) finish() else naechste()
+            }
         }
     }
 
     override fun onStart() { super.onStart(); aktiv = this }
     override fun onDestroy() { if (aktiv === this) aktiv = null; super.onDestroy() }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-
     companion object {
+        const val EXTRA_FORTSETZEN = "ch.rosenweg4303.updater.FORTSETZEN"
+
         internal val warteschlange = mutableListOf<RosenwegUpdater.Update>()
 
         /** Die App, die gerade installiert wird, und ihre Session (0.1.7: Ergebnisse anderer
@@ -218,7 +242,10 @@ class UpdateActivity : Activity() {
         internal var offeneBestaetigung: Intent? = null
         internal val laeuft: Boolean get() = aktuell != null
 
-        internal fun bestaetigungZeigen(c: android.content.Context, i: Intent) {
+        /** "Erlauben" gedrueckt, zurueck aus den Einstellungen geht es weiter. */
+        internal var wartetAufRecht = false
+
+        internal fun bestaetigungZeigen(c: Context, i: Intent) {
             try {
                 c.startActivity(Intent(i).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (e: Exception) {
@@ -226,8 +253,16 @@ class UpdateActivity : Activity() {
             }
         }
 
+        /** Von InstallStatus: Bestaetigung offen - zeigen und als Benachrichtigung merken. */
+        internal fun bestaetigungOffen(c: Context, i: Intent) {
+            offeneBestaetigung = i
+            RosenwegUpdater.bestaetigungMelden(c, aktuell?.name ?: "Rosenweg-App")
+            aktiv?.zeigeLaufendExtern()
+            bestaetigungZeigen(c, i)
+        }
+
         /** Von InstallStatus. Nur die laufende Session zaehlt. */
-        internal fun ergebnis(c: android.content.Context, session: Int, ok: Boolean, meldung: String?) {
+        internal fun ergebnis(c: Context, session: Int, ok: Boolean, meldung: String?) {
             val u = aktuell
             if (u == null || session != aktuelleSession) {
                 android.util.Log.i(RosenwegUpdater.TAG, "Ergebnis fuer fremde Session $session ignoriert")
@@ -235,6 +270,7 @@ class UpdateActivity : Activity() {
             }
             warteschlange.remove(u)
             aktuell = null; aktuelleSession = -1; offeneBestaetigung = null
+            RosenwegUpdater.bestaetigungAbmelden(c)
             val a = aktiv
             if (a != null && !a.isFinishing) a.fertig(u, ok, meldung)
             // ohne sichtbare Seite: beim naechsten Oeffnen (onResume) geht es weiter
@@ -247,4 +283,6 @@ class UpdateActivity : Activity() {
             get() = aktivRef?.get()
             set(v) { aktivRef = v?.let { WeakReference(it) } }
     }
+
+    internal fun zeigeLaufendExtern() { if (!isFinishing) zeigeLaufend() }
 }

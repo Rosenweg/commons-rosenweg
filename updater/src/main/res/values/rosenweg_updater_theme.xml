@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="RosenwegUpdater" parent="@android:style/Theme.DeviceDefault.Light" />
+    <!-- Hell bzw. dunkel (values-night) nach System; die Seite malt Kopf und Grund selbst (UpdateAnsicht) -->
+    <style name="RosenwegUpdater" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
 </resources>
