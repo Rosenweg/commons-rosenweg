@@ -55,6 +55,10 @@ object RosenwegUpdater {
         "ch.rosenweg4303.voicerecorder", "ch.rosenweg4303.paint", "ch.rosenweg4303.karten",
         "ch.rosenweg4303.documents", "ch.rosenweg4303.calendar", "ch.rosenweg4303.contacts",
         "ch.rosenweg4303.keyboard", "ch.rosenweg4303.home", "ch.rosenweg4303.clock", "ch.rosenweg4303.math",
+        // 0.1.4: Kiosk (Android TV, meist die einzige Rosenweg-App dort) und die Flutter-Apps
+        // (rosenweg_basis). Immer HINTEN anhaengen: aeltere Apps kennen die neuen Namen nicht und
+        // muessen trotzdem zur selben Wahl kommen.
+        "ch.rosenweg4303.kiosk", "ch.rosenweg4303.vm", "ch.rosenweg4303.salz", "ch.rosenweg4303.profil",
     )
 
     internal val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
@@ -73,7 +77,10 @@ object RosenwegUpdater {
     fun zustaendig(c: Context): Boolean {
         if (geraetDa(c)) return false
         // nur Apps, die den Updater schon enthalten (alte Versionen ohne ihn pruefen nie)
-        val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) } ?: return false
+        val erste = ZUSTAENDIG.firstOrNull { info(c, it) != null && gleicheSignatur(c, it) && hatUpdater(c, it) }
+        // Eine App, die (noch) nicht in der Liste steht, prueft selbst, solange keine aus der Liste
+        // installiert ist - sonst bliebe sie ohne Updates (so ging es Rosenweg Kiosk bis 0.1.3).
+        if (erste == null) return c.packageName !in ZUSTAENDIG
         return erste == c.packageName
     }
 
