@@ -77,6 +77,21 @@ Die App setzt die Gruppe in `app/src/main/res/values/rosenweg_gruppe.xml`:
 
 Flutter-Apps setzen `gruppe:` in `RosenwegApp`; rosenweg_basis reicht sie als Extra `RosenwegAnmeldeSchirm.EXTRA_GRUPPE` durch (geht der Ressource vor). Ohne Angabe bleibt der Schirm blau, ebenso der Sperrbildschirm von Rosenweg Gerät. Auf Rot und Grün sind helle Texte, Meldungen und die weisse Schrift der (dort dunkleren) Knöpfe mindestens 4.5:1 (WCAG AA); geprüft in `AnmeldeFarbenTest`.
 
+### Gruppenfarbe nach der angemeldeten Person (ab Commons 7.1.3-rosenweg.11)
+
+Entscheid Stefan 28.11.2026, gleich wie rosenweg-basis `docs/gruppenfarbe.md`: Technik/Präsident grün, Ausschuss/Verwaltung blau, sonst rot. Das gilt nur, wo die App für diese Gruppe etwas freischaltet. `RosenwegGruppenFarbe` (Modul commons) schaltet das Startsymbol über die vorhandenen Fossify-Aliasse um (bewohner `.Green`, verwaltung `.Blue`, technik `.Teal`; nur bei echtem Wechsel) und setzt die Haupt- und Akzentfarbe, solange die Person keine eigene gewählt hat. Fossifys eigene Symbolumstellung ist für Rosenweg-Apps aus.
+
+```xml
+<string name="rosenweg_farb_gruppen" translatable="false">verwaltung,technik</string>
+```
+
+```kotlin
+RosenwegGruppenFarbe.setzen(context, gruppen)   // nach der Anmeldung / jedem Personenwechsel
+RosenwegGruppenFarbe.abgemeldet(context)        // zurück auf rosenweg_gruppe
+```
+
+Die Symbole je Farbe erzeugt `android-apps.sh` von rosenweg-basis (Spalte 7 in `android-apps.txt`). Im Manifest zeigen `.Blue`/`.Teal` auf `@mipmap/ic_launcher_verwaltung`/`_technik`. Ohne `rosenweg_farb_gruppen` passiert nichts.
+
 So bindet eine App den Schirm ein:
 
 ```kotlin
